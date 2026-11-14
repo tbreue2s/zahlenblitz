@@ -187,12 +187,21 @@
     </div>
 
     <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-2.5 rounded-2xl flex flex-col justify-center">
-      <div class="flex items-center justify-center gap-2">
-        <span class="text-xs font-black text-emerald-800 dark:text-emerald-300" title="Stufe 3 (Lücke)">③ {counts.step3}</span>
-        <span class="text-xs font-black text-emerald-600 dark:text-emerald-400" title="Stufe 2 (Umkehr)">② {counts.step2}</span>
-        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400" title="Stufe 1 (Basis)">① {counts.step1}</span>
+      <div class="flex items-center justify-center gap-2.5">
+        <div class="flex items-center gap-1 font-black" title="Stufe 3 (Dunkelgrüner Kreis - Lücke)">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-800 dark:bg-emerald-800 shrink-0"></span>
+          <span class="text-xs text-emerald-900 dark:text-emerald-500">{counts.step3}</span>
+        </div>
+        <div class="flex items-center gap-1 font-black" title="Stufe 2 (Mittelgrüner Kreis - Umkehr)">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-600 shrink-0"></span>
+          <span class="text-xs text-emerald-700 dark:text-emerald-400">{counts.step2}</span>
+        </div>
+        <div class="flex items-center gap-1 font-bold" title="Stufe 1 (Hellgrüner Kreis - Basis)">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-300 dark:bg-emerald-400 shrink-0"></span>
+          <span class="text-xs text-emerald-600 dark:text-emerald-300">{counts.step1}</span>
+        </div>
       </div>
-      <span class="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase">
+      <span class="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase mt-0.5">
         Grün-Stufen ({counts.step3 + counts.step2 + counts.step1})
       </span>
     </div>
@@ -200,11 +209,19 @@
     <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 p-2.5 rounded-2xl flex flex-col justify-center">
       <div class="flex items-center justify-center gap-2">
         {#if counts.wrongHard > 0}
-          <span class="text-sm font-black text-rose-600 dark:text-rose-400 animate-pulse" title="Wackelkandidaten">⚠️ {counts.wrongHard}</span>
+          <div class="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-black" title="Wackelkandidaten (Dunkelrot)">
+            <span>🚨</span>
+            <span class="text-sm">{counts.wrongHard}</span>
+          </div>
         {/if}
-        <span class="text-sm font-black text-rose-500 dark:text-rose-400" title="Kürzliche Fehler">{counts.wrongSoft}</span>
+        {#if counts.wrongSoft > 0}
+          <div class="flex items-center gap-1 text-rose-500 dark:text-rose-300 font-bold" title="Kürzliche Fehler (Rosa)">
+            <span>🌸</span>
+            <span class="text-sm">{counts.wrongSoft}</span>
+          </div>
+        {/if}
       </div>
-      <span class="text-[10px] text-rose-800 dark:text-rose-300 font-bold uppercase">Wiederholen</span>
+      <span class="text-[10px] text-rose-800 dark:text-rose-300 font-bold uppercase mt-0.5">Wiederholen</span>
     </div>
 
     <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-2.5 rounded-2xl flex flex-col justify-center">
@@ -337,17 +354,17 @@
                   : ''
               } {
                 vis.level === 'green_step3'
-                  ? 'bg-emerald-700 text-white shadow-xs'
+                  ? 'bg-emerald-800 dark:bg-emerald-800 text-white shadow-xs ring-1 ring-emerald-900 dark:ring-emerald-700'
                   : vis.level === 'green_step2'
-                  ? 'bg-emerald-500 text-white shadow-2xs'
+                  ? 'bg-emerald-500 dark:bg-emerald-600 text-white shadow-2xs'
                   : vis.level === 'green_step1'
-                  ? 'bg-emerald-300 dark:bg-emerald-700/60 text-emerald-950 dark:text-emerald-100'
+                  ? 'bg-emerald-300 dark:bg-emerald-400 text-emerald-950 dark:text-emerald-950'
                   : vis.level === 'wrong_hard'
-                  ? 'bg-rose-600 text-white animate-pulse'
+                  ? 'bg-rose-600 dark:bg-rose-600 text-white animate-pulse ring-1 ring-rose-400 dark:ring-rose-500'
                   : vis.level === 'wrong_soft'
-                  ? 'bg-rose-200 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200'
+                  ? 'bg-rose-200 dark:bg-rose-300 text-rose-900 dark:text-rose-950'
                   : vis.level === 'learning'
-                  ? 'bg-amber-300 dark:bg-amber-500/80 text-amber-950'
+                  ? 'bg-amber-300 dark:bg-amber-400 text-amber-950 dark:text-amber-950'
                   : isInCrosshair
                   ? 'bg-indigo-100/80 dark:bg-slate-700 text-indigo-900 dark:text-indigo-200'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -393,7 +410,17 @@
           </span>
           <h3 class="text-2xl font-black text-slate-900 dark:text-white m-0 flex items-center gap-2">
             <span>{selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}</span>
-            <span>{vis.badge}</span>
+            {#if vis.hasCrown}
+              <span>👑</span>
+            {:else if vis.level === 'green_step3'}
+              <span class="inline-block w-4 h-4 rounded-full bg-emerald-800 dark:bg-emerald-800 border-2 border-emerald-950 dark:border-emerald-600 shrink-0 shadow-xs" title="Stufe 3 (Dunkelgrüner Kreis)"></span>
+            {:else if vis.level === 'green_step2'}
+              <span class="inline-block w-4 h-4 rounded-full bg-emerald-500 dark:bg-emerald-600 border-2 border-emerald-700 dark:border-emerald-400 shrink-0 shadow-xs" title="Stufe 2 (Mittelgrüner Kreis)"></span>
+            {:else if vis.level === 'green_step1'}
+              <span class="inline-block w-4 h-4 rounded-full bg-emerald-300 dark:bg-emerald-400 border-2 border-emerald-500 dark:border-emerald-200 shrink-0 shadow-xs" title="Stufe 1 (Hellgrüner Kreis)"></span>
+            {:else}
+              <span>{vis.badge}</span>
+            {/if}
           </h3>
         </div>
         <button
@@ -517,91 +544,96 @@
           </div>
         </div>
 
-        <!-- Dunkelgrün -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-900/10 border border-emerald-800/30">
-          <div class="w-6 h-6 rounded-lg bg-emerald-700 text-white font-black text-xs flex items-center justify-center shrink-0">
+        <!-- Dunkelgrün (Stufe 3) -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-900/10 dark:bg-emerald-950/30 border border-emerald-800/30 dark:border-emerald-800/60">
+          <div class="w-6 h-6 rounded-full bg-emerald-800 dark:bg-emerald-800 text-white font-black text-xs flex items-center justify-center shrink-0 border border-emerald-950 dark:border-emerald-700 shadow-xs">
             3
           </div>
           <div>
-            <div class="font-black text-emerald-900 dark:text-emerald-300">
-              Sattes Dunkelgrün · Stufe 3 (Meister-Können)
+            <div class="font-black text-emerald-950 dark:text-emerald-400 flex items-center gap-1.5">
+              <span>Sattes Dunkelgrün · Stufe 3 (Meister-Können)</span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-800 dark:bg-emerald-800 border border-emerald-950 dark:border-emerald-600"></span>
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               Auch flexible Lückenaufgaben ({gameMode === 'mult' ? '3 × ? = 21' : '4 + ? = 10'}) erfolgreich gemeistert!
             </div>
           </div>
         </div>
 
-        <!-- Mittelgrün -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
-          <div class="w-6 h-6 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0">
+        <!-- Mittelgrün (Stufe 2) -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/30 dark:border-emerald-700/50">
+          <div class="w-6 h-6 rounded-full bg-emerald-500 dark:bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0 border border-emerald-700 dark:border-emerald-500 shadow-xs">
             2
           </div>
           <div>
-            <div class="font-black text-emerald-800 dark:text-emerald-300">
-              Mittelgrün · Stufe 2 (Umkehr-Können)
+            <div class="font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <span>Mittelgrün · Stufe 2 (Umkehr-Können)</span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-600 border border-emerald-700 dark:border-emerald-400"></span>
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               Gegenrichtung ({gameMode === 'mult' ? 'Geteilt: 21 : 3 = 7' : 'Minus: 10 − 4 = 6'}) sicher verstanden und gelöst!
             </div>
           </div>
         </div>
 
-        <!-- Hellgrün -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-300/15 border border-emerald-400/40">
-          <div class="w-6 h-6 rounded-lg bg-emerald-300 text-emerald-950 font-black text-xs flex items-center justify-center shrink-0">
+        <!-- Hellgrün (Stufe 1) -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-300/15 dark:bg-emerald-950/20 border border-emerald-400/40 dark:border-emerald-600/40">
+          <div class="w-6 h-6 rounded-full bg-emerald-300 dark:bg-emerald-400 text-emerald-950 font-black text-xs flex items-center justify-center shrink-0 border border-emerald-500 dark:border-emerald-300 shadow-xs">
             1
           </div>
           <div>
-            <div class="font-black text-emerald-800 dark:text-emerald-300">
-              Hellgrün · Stufe 1 (Basis-Können)
+            <div class="font-black text-emerald-700 dark:text-emerald-200 flex items-center gap-1.5">
+              <span>Hellgrün · Stufe 1 (Basis-Können)</span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-300 dark:bg-emerald-400 border border-emerald-500 dark:border-emerald-200"></span>
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               Normale Grundaufgabe ({gameMode === 'mult' ? '3 × 7 = 21' : '4 + 6 = 10'}) sitzt sicher im Kopf!
             </div>
           </div>
         </div>
 
         <!-- Gelb -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-400/10 border border-amber-400/30">
-          <div class="w-6 h-6 rounded-lg bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-950/20 border border-amber-400/30 dark:border-amber-700/50">
+          <div class="w-6 h-6 rounded-full bg-amber-300 dark:bg-amber-400 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
             ⚡
           </div>
           <div>
             <div class="font-black text-amber-900 dark:text-amber-300">
               Gelb · Im Lernprozess
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               1x richtig gerechnet, wird aktuell geübt und gefestigt.
             </div>
           </div>
         </div>
 
         <!-- Rosa / Soft-Rot -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-300/15 border border-rose-300/40">
-          <div class="w-6 h-6 rounded-lg bg-rose-200 text-rose-900 font-black text-xs flex items-center justify-center shrink-0">
-            ?
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-300/15 dark:bg-rose-950/30 border border-rose-300/40 dark:border-rose-800/60">
+          <div class="w-6 h-6 rounded-full bg-rose-200 dark:bg-rose-300 text-rose-900 dark:text-rose-950 font-black text-xs flex items-center justify-center shrink-0">
+            🌸
           </div>
           <div>
-            <div class="font-black text-rose-800 dark:text-rose-300">
-              Zartes Rosa · Kürzlicher Fehler
+            <div class="font-black text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+              <span>Zartes Rosa · Kürzlicher Fehler</span>
+              <span>🌸</span>
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               Einmaliger Rechenfehler oder Vertipper – kommt bald zur Wiederholung.
             </div>
           </div>
         </div>
 
         <!-- Dunkelrot -->
-        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-600/10 border border-rose-600/30">
-          <div class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-            !
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-600/10 dark:bg-rose-950/50 border border-rose-600/30 dark:border-rose-700/70">
+          <div class="w-6 h-6 rounded-full bg-rose-600 dark:bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0 animate-pulse">
+            🚨
           </div>
           <div>
-            <div class="font-black text-rose-700 dark:text-rose-400">
-              Dunkelrot · Wackelkandidat
+            <div class="font-black text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+              <span>Dunkelrot · Wackelkandidat</span>
+              <span>🚨</span>
             </div>
-            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-snug">
               Mehrfache Fehlversuche – kann gezielt über „Wackelkandidaten“ geübt werden.
             </div>
           </div>

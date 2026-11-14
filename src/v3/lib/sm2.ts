@@ -215,7 +215,7 @@ export function getFactVisualStatus(fact: FactFamily): FactVisualStatus {
       level: 'green_step3',
       hasCrown,
       label: hasCrown ? 'Langzeit-Meister 👑' : 'Meister-Können',
-      badge: hasCrown ? '👑' : '🌲',
+      badge: hasCrown ? '👑' : '🟢',
       shortDesc: hasCrown
         ? 'Im Langzeitgedächtnis verankert (inkl. Lückenaufgabe)!'
         : 'Stufe 3: Auch Lückenaufgaben gemeistert!',
@@ -227,7 +227,7 @@ export function getFactVisualStatus(fact: FactFamily): FactVisualStatus {
       level: 'green_step2',
       hasCrown: false,
       label: 'Umkehr-Können',
-      badge: '🟩',
+      badge: '🟢',
       shortDesc: 'Stufe 2: Geteilt- bzw. Minusaufgabe gemeistert!',
     };
   }

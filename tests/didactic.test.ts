@@ -194,6 +194,7 @@ const visStep1 = getFactVisualStatus({
 });
 assert.strictEqual(visStep1.level, 'green_step1');
 assert.strictEqual(visStep1.hasCrown, false);
+assert.strictEqual(visStep1.badge, '🟢');
 
 // Fall 4: Stufe 2 (Mittelgrün - Umkehraufgabe)
 const visStep2 = getFactVisualStatus({
@@ -206,6 +207,7 @@ const visStep2 = getFactVisualStatus({
 });
 assert.strictEqual(visStep2.level, 'green_step2');
 assert.strictEqual(visStep2.hasCrown, false);
+assert.strictEqual(visStep2.badge, '🟢');
 
 // Fall 5: Stufe 3 (Dunkelgrün - Lückenaufgabe, Intervall < 14)
 const visStep3 = getFactVisualStatus({
@@ -218,6 +220,7 @@ const visStep3 = getFactVisualStatus({
 });
 assert.strictEqual(visStep3.level, 'green_step3');
 assert.strictEqual(visStep3.hasCrown, false);
+assert.strictEqual(visStep3.badge, '🟢');
 
 // Fall 6: Langzeit-Meister mit Krone (Stufe 3 + Intervall >= 14)
 const visCrown = getFactVisualStatus({
@@ -230,6 +233,7 @@ const visCrown = getFactVisualStatus({
 });
 assert.strictEqual(visCrown.level, 'green_step3');
 assert.strictEqual(visCrown.hasCrown, true);
+assert.strictEqual(visCrown.badge, '👑');
 
 // Fall 7: Zartes Rosa / Soft-Rot (kürzlicher Einzelfehler)
 const visWrongSoft = getFactVisualStatus({
@@ -243,6 +247,7 @@ const visWrongSoft = getFactVisualStatus({
 });
 assert.strictEqual(visWrongSoft.level, 'wrong_soft');
 assert.strictEqual(visWrongSoft.hasCrown, false);
+assert.strictEqual(visWrongSoft.badge, '🌸');
 
 // Fall 8: Dunkelrot / Hard-Rot (Wackelkandidat, EaseFactor < 2.0 oder Trefferquote < 65%)
 const visWrongHard = getFactVisualStatus({
@@ -256,6 +261,7 @@ const visWrongHard = getFactVisualStatus({
 });
 assert.strictEqual(visWrongHard.level, 'wrong_hard');
 assert.strictEqual(visWrongHard.hasCrown, false);
+assert.strictEqual(visWrongHard.badge, '🚨');
 
 console.log('✓ Test 7 bestanden: 3 Grün-Stufen, 2 Rot-Stufen und Langzeit-Krone berechnen präzise.');
 
