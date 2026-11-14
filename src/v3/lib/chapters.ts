@@ -34,6 +34,39 @@ export interface QueuedTaskV3 {
   variant: TaskVariant;
 }
 
+export function getFactWorld(fact: FactFamily): 1 | 2 | 3 {
+  if (fact.mode === 'mult') {
+    // Welt 1: Kernreihen 1, 2, 5, 10 (Gitter-Achsen)
+    if (
+      fact.a === 1 ||
+      fact.a === 2 ||
+      fact.a === 5 ||
+      fact.a === 10 ||
+      fact.b === 1 ||
+      fact.b === 2 ||
+      fact.b === 5 ||
+      fact.b === 10
+    ) {
+      return 1;
+    }
+    // Welt 2: Forscher-Aufgaben (Reihen 3 & 4)
+    if (fact.a === 3 || fact.a === 4 || fact.b === 3 || fact.b === 4) {
+      return 2;
+    }
+    // Welt 3: Königsaufgaben (Reihen 6, 7, 8, 9)
+    return 3;
+  } else {
+    // Welt 1: Zerlegungen bis 10 (45 Fakten)
+    if (fact.c <= 10) return 1;
+    // Welt 2: Verdoppeln und Fast-Verdoppeln bis 20 (15 Fakten)
+    if (fact.a === fact.b || Math.abs(fact.a - fact.b) === 1) {
+      return 2;
+    }
+    // Welt 3: Echter Zehnerübergang (40 Fakten)
+    return 3;
+  }
+}
+
 export function getWorldChaptersV3(
   facts: FactFamily[],
   mode: GameMode
@@ -44,48 +77,28 @@ export function getWorldChaptersV3(
         'mult_1',
         'Insel der Kernreihen',
         '🏝️',
-        'Reihen 1, 2, 5, 10',
-        facts.filter(
-          (f) =>
-            f.a === 1 ||
-            f.a === 2 ||
-            f.a === 5 ||
-            f.a === 10 ||
-            f.b === 1 ||
-            f.b === 2 ||
-            f.b === 5 ||
-            f.b === 10
-        ),
+        'Reihen 1, 2, 5, 10 (64 Fakten)',
+        facts.filter((f) => getFactWorld(f) === 1),
         'Kernreihen malnehmen (z. B. 2 × 5)',
         'Umkehraufgaben geteilt (z. B. 10 : 2)',
         'Lückenaufgaben (z. B. 2 × ? = 10)'
       ),
       buildMultChapterV3(
         'mult_2',
-        'Tal der Quadratzahlen & Nachbarn',
+        'Tal der Forscherreihen',
         '🌋',
-        'Quadratzahlen & Reihen 3, 4, 6',
-        facts.filter(
-          (f) =>
-            (f.a === f.b ||
-              f.strategy === 'near_squares' ||
-              [3, 4, 6].includes(f.b)) &&
-            !(f.a === 1 || f.a === 10 || f.b === 1 || f.b === 10)
-        ),
-        'Quadratzahlen & Reihen 3, 4, 6 malnehmen',
-        'Umkehraufgaben geteilt (z. B. 16 : 4)',
-        'Lückenaufgaben (z. B. 4 × ? = 16)'
+        'Reihen 3 & 4 (20 Fakten)',
+        facts.filter((f) => getFactWorld(f) === 2),
+        'Reihen 3 & 4 malnehmen (z. B. 3 × 7, 4 × 8)',
+        'Umkehraufgaben geteilt (z. B. 28 : 4)',
+        'Lückenaufgaben (z. B. 4 × ? = 28)'
       ),
       buildMultChapterV3(
         'mult_3',
         'Meister-Gipfel der Königsreihen',
         '🏰',
-        'Königsaufgaben (7, 8, 9)',
-        facts.filter(
-          (f) =>
-            [7, 8, 9].includes(f.a) &&
-            [7, 8, 9].includes(f.b)
-        ),
+        'Königsaufgaben 6, 7, 8, 9 (16 Fakten)',
+        facts.filter((f) => getFactWorld(f) === 3),
         'Königsreihen malnehmen (z. B. 7 × 8)',
         'Schwere Geteiltaufgaben (z. B. 56 : 7)',
         'Meister-Lücken (z. B. 7 × ? = 56)'
@@ -99,8 +112,8 @@ export function getWorldChaptersV3(
       'pm_1',
       'Insel der Zehner-Basis',
       '🏝️',
-      'Alle Zerlegungen bis 10',
-      facts.filter((f) => f.c <= 10),
+      'Alle Zerlegungen bis 10 (45 Fakten)',
+      facts.filter((f) => getFactWorld(f) === 1),
       'Plusaufgaben bis 10 (z. B. 3 + 5, 2 + 8)',
       'Umkehraufgaben Minus (z. B. 8 − 5, 10 − 3)',
       'Ergänzen & Lücken (z. B. 3 + ? = 10)'
@@ -109,12 +122,8 @@ export function getWorldChaptersV3(
       'pm_2',
       'Tal der Doppelgänger',
       '⚡',
-      'Verdoppeln & Nachbarn bis 20',
-      facts.filter(
-        (f) =>
-          f.c > 10 &&
-          (f.a === f.b || Math.abs(f.a - f.b) === 1)
-      ),
+      'Verdoppeln & Nachbarn bis 20 (15 Fakten)',
+      facts.filter((f) => getFactWorld(f) === 2),
       'Verdoppeln bis 20 (z. B. 6 + 6, 7 + 7)',
       'Halbieren / Minus (z. B. 14 − 7, 16 − 8)',
       'Nachbarn & Lücken (z. B. 6 + 7, ? + 7 = 14)'
@@ -123,13 +132,8 @@ export function getWorldChaptersV3(
       'pm_3',
       'Zehner-Gipfel',
       '🚀',
-      'Zehnerübergang bis 20',
-      facts.filter(
-        (f) =>
-          f.c > 10 &&
-          f.a !== f.b &&
-          Math.abs(f.a - f.b) > 1
-      ),
+      'Zehnerübergang bis 20 (40 Fakten)',
+      facts.filter((f) => getFactWorld(f) === 3),
       'Plus mit Zehnerstopp (z. B. 8 + 5 = 13)',
       'Minus unter die 10 (z. B. 13 − 5 = 8)',
       'Meister-Lücken (z. B. 8 + ? = 13)'
