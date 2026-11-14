@@ -20,7 +20,6 @@
     onStartBlitz: () => void;
     onStartChapterSession: (chapter: WorldChapterV3) => void;
     onPracticeFact: (fact: FactFamily) => void;
-    onOpenMatrix: () => void;
     onOpenUsers: () => void;
     onOpenLegal: () => void;
   }
@@ -40,7 +39,6 @@
     onStartBlitz,
     onStartChapterSession,
     onPracticeFact,
-    onOpenMatrix,
     onOpenUsers,
     onOpenLegal,
   }: Props = $props();
@@ -201,12 +199,11 @@
     </button>
   </section>
 
-  <!-- 4. WISSENSKARTE (10x10 RECHENTAFEL DIREKT AUF DEM HAUPTBILDSCHIRM) -->
+  <!-- 4. 10x10 RECHENTAFEL DIREKT AUF DEM HAUPTBILDSCHIRM -->
   <Heatmap
     {gameMode}
     {facts}
     onPracticeFact={onPracticeFact}
-    onOpenFullscreen={onOpenMatrix}
   />
 
   <!-- 5. WEITERE TRAININGS-MODI: WACKELKANDIDATEN & 60s BLITZ-CHALLENGE -->

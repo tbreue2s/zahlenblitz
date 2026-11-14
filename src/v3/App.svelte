@@ -17,13 +17,12 @@
   } from './lib/storage';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from './lib/types';
   import HomeView from './components/HomeView.svelte';
-  import MatrixView from './components/MatrixView.svelte';
   import PracticeView from './components/PracticeView.svelte';
   import BlitzChallengeView from './components/BlitzChallengeView.svelte';
   import UserModal from './components/UserModal.svelte';
   import LegalView from '../components/LegalView.svelte';
 
-  type Screen = 'home' | 'practice' | 'matrix' | 'users' | 'legal' | 'blitz';
+  type Screen = 'home' | 'practice' | 'users' | 'legal' | 'blitz';
 
   let currentScreen = $state<Screen>('home');
   let loaded = loadV3ProfilesAndActiveId();
@@ -257,7 +256,6 @@
       onStartBlitz={handleStartBlitz}
       onStartChapterSession={handleStartChapterSession}
       onPracticeFact={handlePracticeFact}
-      onOpenMatrix={() => (currentScreen = 'matrix')}
       onOpenUsers={() => (currentScreen = 'users')}
       onOpenLegal={() => (currentScreen = 'legal')}
     />
@@ -278,14 +276,6 @@
       soundEnabled={stats.soundEnabled}
       onRecordHighscore={handleRecordHighscore}
       onAddStars={handleAddStars}
-      onBack={() => (currentScreen = 'home')}
-    />
-  {:else if currentScreen === 'matrix'}
-    <MatrixView
-      {gameMode}
-      {facts}
-      onSwitchGameMode={handleSwitchGameMode}
-      onPracticeFact={handlePracticeFact}
       onBack={() => (currentScreen = 'home')}
     />
   {:else if currentScreen === 'legal'}

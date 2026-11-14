@@ -1,27 +1,24 @@
 <script lang="ts">
-  import { getFactMastery, getFactVisualStatus } from '../lib/sm2';
+  import { getFactVisualStatus } from '../lib/sm2';
   import { getAccessibleFactsPoolV3, getFactWorld } from '../lib/chapters';
-  import type { FactFamily, FactVisualStatus, GameMode, MasteryStatus } from '../lib/types';
+  import type { FactFamily, FactVisualStatus, GameMode } from '../lib/types';
 
   interface Props {
     gameMode: GameMode;
     facts: FactFamily[];
     onPracticeFact?: (fact: FactFamily) => void;
-    onOpenFullscreen?: () => void;
   }
 
   let {
     gameMode,
     facts,
     onPracticeFact,
-    onOpenFullscreen,
   }: Props = $props();
 
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   let selectedFact = $state<FactFamily | null>(null);
   let hoveredCell = $state<{ a: number; b: number } | null>(null);
-  let activeFilter = $state<'none' | 'squares' | 'core' | 'bonds10' | 'doubles'>('none');
   let selectedWorldFilter = $state<0 | 1 | 2 | 3>(0);
   let lockedPromptFact = $state<FactFamily | null>(null);
   let showLegendModal = $state(false);
@@ -40,13 +37,13 @@
 
   function getWorldTitle(w: 1 | 2 | 3): string {
     if (gameMode === 'mult') {
-      if (w === 1) return 'Welt 1: Kernreihen (1, 2, 5, 10)';
-      if (w === 2) return 'Welt 2: Forscherreihen (3 & 4)';
-      return 'Welt 3: Königsaufgaben (6, 7, 8, 9)';
+      if (w === 1) return 'Welt 1';
+      if (w === 2) return 'Welt 2';
+      return 'Welt 3';
     } else {
-      if (w === 1) return 'Welt 1: Basis bis 10';
-      if (w === 2) return 'Welt 2: Doppelgänger & Nachbarn';
-      return 'Welt 3: Zehnerübergang';
+      if (w === 1) return 'Welt 1';
+      if (w === 2) return 'Welt 2';
+      return 'Welt 3';
     }
   }
 
@@ -63,162 +60,48 @@
         };
   }
 
-  function isHighlighted(a: number, b: number): boolean {
-    if (activeFilter === 'none') return false;
-    if (activeFilter === 'squares' || activeFilter === 'doubles') return a === b;
-    if (activeFilter === 'bonds10') return a + b === 10;
-    if (activeFilter === 'core') {
-      return a === 1 || a === 2 || a === 5 || a === 10 || b === 1 || b === 2 || b === 5 || b === 10;
-    }
-    return false;
-  }
-
-  function toggleFilter(filter: 'squares' | 'core' | 'bonds10' | 'doubles') {
-    activeFilter = activeFilter === filter ? 'none' : filter;
-  }
-
-  let counts = $derived.by(() => {
-    let crowns = 0;
-    let step3 = 0;
-    let step2 = 0;
-    let step1 = 0;
-    let learning = 0;
-    let wrongSoft = 0;
-    let wrongHard = 0;
-    let fresh = 0;
-
-    for (const f of facts) {
-      const vis = getFactVisualStatus(f);
-      if (vis.hasCrown) crowns++;
-      if (vis.level === 'green_step3') step3++;
-      else if (vis.level === 'green_step2') step2++;
-      else if (vis.level === 'green_step1') step1++;
-      else if (vis.level === 'wrong_hard') wrongHard++;
-      else if (vis.level === 'wrong_soft') wrongSoft++;
-      else if (vis.level === 'learning') learning++;
-      else fresh++;
-    }
-    return { crowns, step3, step2, step1, learning, wrongSoft, wrongHard, fresh };
-  });
-
-  let masteredTotal = $derived(counts.step1 + counts.step2 + counts.step3);
-  let masteredPercent = $derived(Math.round((masteredTotal / (facts.length || 100)) * 100));
-
   let activeA = $derived(hoveredCell?.a ?? selectedFact?.a ?? null);
   let activeB = $derived(hoveredCell?.b ?? selectedFact?.b ?? null);
 </script>
 
-<section class="bg-white dark:bg-[#111827] rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3" aria-label="Wissenskarte">
-  <!-- Header: Titel & Legende -->
-  <div class="flex items-center justify-between gap-2 flex-wrap">
-    <div>
-      <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5 m-0">
-        <span>🗺️</span>
-        <span>{gameMode === 'mult' ? '1×1 Wissenskarte' : 'Zahlen-Held Wissenskarte'}</span>
-      </h3>
-      <span class="text-[10px] text-slate-400 font-medium">
-        Zeile × Spalte · Tippe auf ein Feld für Details &amp; Üben
-      </span>
-    </div>
-
-    <div class="flex items-center gap-1.5">
-      <button
-        type="button"
-        onclick={() => (showLegendModal = true)}
-        class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/40 px-2 py-1 rounded-xl cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition flex items-center gap-1"
-      >
-        <span>ℹ️</span>
-        <span>Legende</span>
-      </button>
-
-      {#if onOpenFullscreen}
-        <button
-          type="button"
-          onclick={onOpenFullscreen}
-          class="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-xl cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-          title="Vollbild-Rechentafel öffnen"
-        >
-          Groß ›
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Fortschrittsbalken -->
-  <div class="space-y-1">
-    <div class="flex items-center justify-between text-xs">
-      <span class="font-extrabold text-slate-800 dark:text-slate-200">
-        {masteredTotal} von 100 Fakten gemeistert
-      </span>
-      <span class="font-black text-indigo-600 dark:text-indigo-400">
-        {masteredPercent}%
-      </span>
-    </div>
-    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60">
-      <div
-        class="bg-gradient-to-r from-emerald-500 via-emerald-400 to-indigo-500 h-full rounded-full transition-all duration-300 shadow-2xs"
-        style="width: {masteredPercent}%"
-      ></div>
-    </div>
-  </div>
-
-  <!-- Status-Pills -->
-  <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold">
-    <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-1 rounded-xl text-amber-800 dark:text-amber-300 flex items-center justify-center gap-1">
-      <span class="text-xs">👑</span>
-      <span>{counts.crowns} Kronen</span>
-    </div>
-
-    <div class="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 p-1 rounded-xl text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1">
-      <span class="text-xs">🟢</span>
-      <span>{masteredTotal} Gemeistert</span>
-    </div>
-
-    <div class="bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-800/40 p-1 rounded-xl text-rose-800 dark:text-rose-300 flex items-center justify-center gap-1">
-      <span class="text-xs">{counts.wrongHard > 0 ? '🚨' : '✓'}</span>
-      <span>{counts.wrongHard > 0 ? `${counts.wrongHard} Knacknüsse` : 'Sicher'}</span>
-    </div>
-  </div>
-
-  <!-- Welten-Filter / Radar (Didaktik & Paywall Transparenz) -->
-  <div class="space-y-1.5 pt-1">
-    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+<section class="bg-white dark:bg-[#111827] rounded-3xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2.5" aria-label="10x10 Rechentafel">
+  <!-- Welten-Auswahl & Legende (alles kompakt auf einer Zeile, ohne horizontales Scrollen) -->
+  <div class="flex items-center justify-between gap-1.5 flex-wrap">
+    <div class="flex items-center gap-1.5 text-xs">
       <button
         type="button"
         onclick={() => (selectedWorldFilter = 0)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer shrink-0 {
+        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer {
           selectedWorldFilter === 0
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
         }"
       >
-        Alle (100)
+        Alle
       </button>
 
       <button
         type="button"
         onclick={() => (selectedWorldFilter = 1)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer shrink-0 flex items-center gap-1 {
+        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer {
           selectedWorldFilter === 1
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
         }"
       >
-        <span>🥉</span>
-        <span>Welt 1 ({gameMode === 'mult' ? 'Kern: 64' : 'Basis: 45'})</span>
+        Welt 1
       </button>
 
       <button
         type="button"
         onclick={() => (selectedWorldFilter = 2)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer shrink-0 flex items-center gap-1 {
+        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 2
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
         }"
       >
-        <span>🥈</span>
-        <span>Welt 2 ({gameMode === 'mult' ? 'Forscher: 20' : 'Doppelgänger: 15'})</span>
+        <span>Welt 2</span>
         {#if unlockedWorldCount < 2}
           <span class="text-[9px]">🔒</span>
         {/if}
@@ -227,37 +110,28 @@
       <button
         type="button"
         onclick={() => (selectedWorldFilter = 3)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer shrink-0 flex items-center gap-1 {
+        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 3
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
         }"
       >
-        <span>🥇</span>
-        <span>Welt 3 ({gameMode === 'mult' ? 'Königsaufgaben: 16' : 'Zehnerstopp: 40'})</span>
+        <span>Welt 3</span>
         {#if unlockedWorldCount < 3}
           <span class="text-[9px]">🔒</span>
         {/if}
       </button>
     </div>
 
-    <!-- Didaktischer Erklär-Banner für aktive Welt -->
-    {#if selectedWorldFilter === 1}
-      <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
-        <span class="text-base shrink-0">🥉</span>
-        <span><strong>Welt 1 ({gameMode === 'mult' ? 'Kernaufgaben' : 'Basis bis 10'}):</strong> {gameMode === 'mult' ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.' : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.'}</span>
-      </div>
-    {:else if selectedWorldFilter === 2}
-      <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2 rounded-xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
-        <span class="text-base shrink-0">🥈</span>
-        <span><strong>Welt 2 ({gameMode === 'mult' ? 'Forscherreihen' : 'Doppelgänger & Nachbarn'}):</strong> {gameMode === 'mult' ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.' : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.'}</span>
-      </div>
-    {:else if selectedWorldFilter === 3}
-      <div class="text-[10px] text-amber-900 dark:text-amber-200 bg-amber-50/80 dark:bg-amber-950/50 p-2 rounded-xl border border-amber-200/60 dark:border-amber-800/60 animate-fade-in flex items-center gap-2">
-        <span class="text-base shrink-0">🥇</span>
-        <span><strong>Welt 3 ({gameMode === 'mult' ? 'Königsaufgaben' : 'Zehnerübergang'}):</strong> {gameMode === 'mult' ? 'Die 16 anspruchsvollsten Königsaufgaben der Reihen 6, 7, 8 und 9 (z. B. 7 × 8 = 56).' : 'Der Zehnerübergang (Zehnerstopp über die 10, z. B. 8 + 5 = 13).'}</span>
-      </div>
-    {/if}
+    <!-- Legende Button -->
+    <button
+      type="button"
+      onclick={() => (showLegendModal = true)}
+      class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/40 px-2 py-1 rounded-xl cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition flex items-center gap-1 shrink-0"
+    >
+      <span>ℹ️</span>
+      <span>Legende</span>
+    </button>
   </div>
 
   <!-- 11x11 Matrix Grid (Zahlen oben und links für volle Übersicht) -->
@@ -307,7 +181,6 @@
           {@const locked = isFactLocked(fact)}
           {@const isDimmed = selectedWorldFilter > 0 && world !== selectedWorldFilter}
           {@const isSelected = selectedFact?.a === a && selectedFact?.b === b}
-          {@const isHL = isHighlighted(a, b)}
           {@const isInCrosshair = activeA === a || activeB === b}
 
           <button
@@ -330,8 +203,6 @@
             } {
               isSelected
                 ? 'ring-2 ring-indigo-500 scale-110 z-10'
-                : isHL
-                ? 'ring-2 ring-amber-400 z-10'
                 : ''
             } {
               locked
@@ -413,7 +284,7 @@
   {/if}
 </section>
 
-<!-- MODAL: HINWEIS BEI GESPERRTEM FAKT (DIDAKTIK & PAYWALL) -->
+<!-- MODAL: HINWEIS BEI GESPERRTEM FAKT -->
 {#if lockedPromptFact}
   {@const w = getFactWorld(lockedPromptFact)}
   <div
@@ -435,17 +306,11 @@
       </div>
       <div>
         <h3 class="text-sm font-black text-slate-900 dark:text-white m-0">
-          {getWorldTitle(w)}
+          {getWorldTitle(w)} - Noch gesperrt
         </h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 m-0 leading-relaxed">
-          Diese Aufgabe ({lockedPromptFact.a} {gameMode === 'mult' ? '×' : '+'} {lockedPromptFact.b}) gehört zu <strong>{getWorldTitle(w)}</strong>.
+          Diese Aufgabe ({lockedPromptFact.a} {gameMode === 'mult' ? '×' : '+'} {lockedPromptFact.b}) ist eine Aufgabe aus Welt 2 oder Welt 3.
         </p>
-      </div>
-      <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 text-left space-y-1">
-        <span class="font-extrabold block">🛡️ Didaktischer Schutz &amp; Freischaltung:</span>
-        <span class="text-[11px] leading-snug block">
-          Um Überforderung zu vermeiden, schaltet sich dieser Bereich automatisch frei, sobald die vorherige Welt zu 80% beherrscht wird (oder in der Vollversion).
-        </span>
       </div>
       <button
         type="button"
@@ -458,7 +323,7 @@
   </div>
 {/if}
 
-<!-- MODAL: INTERAKTIVE FARB-LEGENDE -->
+<!-- MODAL: FARB-LEGENDE -->
 {#if showLegendModal}
   <div
     class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
@@ -471,13 +336,13 @@
     tabindex="-1"
     role="dialog"
     aria-modal="true"
-    aria-label="Farb-Legende der Wissenskarte"
+    aria-label="Farb-Legende"
   >
     <div class="w-full max-w-md bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 class="text-base font-extrabold text-slate-900 dark:text-white m-0">
-            🗺️ Farb-Legende der Wissenskarte
+            Farb-Legende
           </h3>
           <p class="text-xs text-slate-400 m-0">
             Was bedeuten die Farben auf der Rechentafel?
@@ -502,7 +367,7 @@
               Goldene Krone · Langzeitgedächtnis
             </div>
             <div class="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 leading-snug">
-              Höchste Auszeichnung! Alle 3 Stufen gemeistert und im Langzeit-Spaced-Repetition über Wochen verankert (Intervall ≥ 14 Tage).
+              Höchste Auszeichnung! Alle 3 Stufen gemeistert und im Langzeit-Spaced-Repetition verankert.
             </div>
           </div>
         </div>
@@ -515,7 +380,7 @@
               Dunkelgrüner Kreis · Stufe 3: Lückenaufgabe gemeistert
             </div>
             <div class="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5 leading-snug">
-              Höchstes Verständnis! Auch Lückenaufgaben (z. B. <code>3 × ? = 21</code> bzw. <code>4 + ? = 12</code>) wurden sicher gelöst.
+              Höchstes Verständnis! Auch Lückenaufgaben wurden sicher gelöst.
             </div>
           </div>
         </div>
@@ -528,7 +393,7 @@
               Mittelgrüner Kreis · Stufe 2: Umkehraufgabe gemeistert
             </div>
             <div class="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5 leading-snug">
-              Starkes Rechenverständnis! Auch die geteilt- bzw. minus-Umkehrung (z. B. <code>21 : 3 = 7</code> bzw. <code>12 − 4 = 8</code>) sitzt.
+              Starkes Rechenverständnis! Auch die Umkehraufgabe sitzt.
             </div>
           </div>
         </div>
@@ -541,7 +406,7 @@
               Hellgrüner Kreis · Stufe 1: Grundaufgabe sitzt sicher
             </div>
             <div class="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5 leading-snug">
-              Die normale Mal- bzw. Plusaufgabe (z. B. <code>3 × 7 = 21</code> bzw. <code>4 + 8 = 12</code>) wurde mehrfach hintereinander fehlerfrei gelöst.
+              Die normale Grundaufgabe wurde fehlerfrei gelöst.
             </div>
           </div>
         </div>
@@ -554,7 +419,7 @@
               Gelber Kreis · Am Lernen
             </div>
             <div class="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 leading-snug">
-              Einmal richtig gerechnet, wird in den nächsten Tagen erneut zur Festigung abgefragt.
+              Einmal richtig gerechnet, wird bald zur Festigung wiederholt.
             </div>
           </div>
         </div>
@@ -580,7 +445,7 @@
               Dunkelrot pulsierend · Wackelkandidat
             </div>
             <div class="text-[11px] text-rose-800/80 dark:text-rose-300/80 mt-0.5 leading-snug">
-              Mehrfach falsch gerechnet. Wird im <strong>Wackelkandidaten-Trainer</strong> gezielt und geduldig trainiert!
+              Mehrfach falsch gerechnet. Wird im <strong>Wackelkandidaten-Trainer</strong> gezielt trainiert!
             </div>
           </div>
         </div>
@@ -590,10 +455,10 @@
           <span class="text-xl shrink-0">🔒</span>
           <div>
             <div class="font-black text-slate-800 dark:text-slate-200">
-              Schloss · Noch gesperrt (Didaktik-Schutz / Paywall)
+              Schloss - Noch gesperrt
             </div>
             <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
-              Aufgabe aus Welt 2 oder Welt 3. Schaltet sich frei, sobald die vorherige Welt gemeistert wurde (oder in der Vollversion).
+              Aufgabe aus Welt 2 oder Welt 3
             </div>
           </div>
         </div>
