@@ -37,13 +37,13 @@
 
   function getWorldTitle(w: 1 | 2 | 3): string {
     if (gameMode === 'mult') {
-      if (w === 1) return 'Welt 1';
-      if (w === 2) return 'Welt 2';
-      return 'Welt 3';
+      if (w === 1) return 'Welt 1: Kernreihen (1, 2, 5, 10)';
+      if (w === 2) return 'Welt 2: Forscherreihen (3 & 4)';
+      return 'Welt 3: Königsaufgaben (6, 7, 8, 9)';
     } else {
-      if (w === 1) return 'Welt 1';
-      if (w === 2) return 'Welt 2';
-      return 'Welt 3';
+      if (w === 1) return 'Welt 1: Basis bis 10';
+      if (w === 2) return 'Welt 2: Doppelgänger & Nachbarn';
+      return 'Welt 3: Zehnerübergang';
     }
   }
 
@@ -82,7 +82,7 @@
 
       <button
         type="button"
-        onclick={() => (selectedWorldFilter = 1)}
+        onclick={() => (selectedWorldFilter = selectedWorldFilter === 1 ? 0 : 1)}
         class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer {
           selectedWorldFilter === 1
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
@@ -94,7 +94,7 @@
 
       <button
         type="button"
-        onclick={() => (selectedWorldFilter = 2)}
+        onclick={() => (selectedWorldFilter = selectedWorldFilter === 2 ? 0 : 2)}
         class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 2
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
@@ -109,7 +109,7 @@
 
       <button
         type="button"
-        onclick={() => (selectedWorldFilter = 3)}
+        onclick={() => (selectedWorldFilter = selectedWorldFilter === 3 ? 0 : 3)}
         class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 3
             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
@@ -133,6 +133,24 @@
       <span>Legende</span>
     </button>
   </div>
+
+  <!-- Didaktischer Erklär-Banner für aktive Welt (bei Klick auf Welt 1, 2 oder 3) -->
+  {#if selectedWorldFilter === 1}
+    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
+      <span class="text-base shrink-0">🥉</span>
+      <span><strong>Welt 1 ({gameMode === 'mult' ? 'Kernaufgaben' : 'Basis bis 10'}):</strong> {gameMode === 'mult' ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.' : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.'}</span>
+    </div>
+  {:else if selectedWorldFilter === 2}
+    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
+      <span class="text-base shrink-0">🥈</span>
+      <span><strong>Welt 2 ({gameMode === 'mult' ? 'Forscherreihen' : 'Doppelgänger & Nachbarn'}):</strong> {gameMode === 'mult' ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.' : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.'}</span>
+    </div>
+  {:else if selectedWorldFilter === 3}
+    <div class="text-[10px] text-amber-900 dark:text-amber-200 bg-amber-50/80 dark:bg-amber-950/50 p-2.5 rounded-2xl border border-amber-200/60 dark:border-amber-800/60 animate-fade-in flex items-center gap-2">
+      <span class="text-base shrink-0">🥇</span>
+      <span><strong>Welt 3 ({gameMode === 'mult' ? 'Königsaufgaben' : 'Zehnerübergang'}):</strong> {gameMode === 'mult' ? 'Die 16 anspruchsvollsten Königsaufgaben der Reihen 6, 7, 8 und 9 (z. B. 7 × 8 = 56).' : 'Der Zehnerübergang (Zehnerstopp über die 10, z. B. 8 + 5 = 13).'}</span>
+    </div>
+  {/if}
 
   <!-- 11x11 Matrix Grid (Zahlen oben und links für volle Übersicht) -->
   <div class="w-full overflow-x-auto pb-1">
