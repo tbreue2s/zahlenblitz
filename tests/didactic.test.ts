@@ -7,7 +7,7 @@ import {
   selectTaskVariant,
 } from '../src/v3/lib/generator';
 import { getWorldChaptersV3 } from '../src/v3/lib/chapters';
-import { applySM2ToFact, evaluateResponseQuality } from '../src/v3/lib/sm2';
+import { applySM2ToFact, evaluateResponseQuality, getFactVisualStatus } from '../src/v3/lib/sm2';
 import type { FactFamily } from '../src/v3/lib/types';
 
 console.log('=== START DIDACTIC TESTS V3 ===');
@@ -163,5 +163,100 @@ assert.strictEqual(weakQueue.length, 10, 'Wackelkandidaten-Queue muss 10 Aufgabe
 const blitzQueue = buildBlitzChallengeQueueV3(factsWithFlaws, 60);
 assert.strictEqual(blitzQueue.length, 60, 'Blitz-Queue muss 60 Aufgaben für den 60s Sprint liefern');
 console.log('✓ Test 6 bestanden: Wackelkandidaten-Trainer & 60s Blitz-Challenge funktionieren fehlerfrei.');
+
+// --- TEST 7: Farbmetrik & Visueller Status (3 Grün-Stufen, 2 Rot-Stufen, Krone) ---
+const baseFact = multFacts[0]; // 1x1=1
+
+// Fall 1: Neu
+const visFresh = getFactVisualStatus(baseFact);
+assert.strictEqual(visFresh.level, 'fresh');
+assert.strictEqual(visFresh.hasCrown, false);
+
+// Fall 2: Im Lernen (1 richtiger Versuch)
+const visLearning = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 1,
+  correctAttempts: 1,
+  repetitions: 1,
+  interval: 1,
+});
+assert.strictEqual(visLearning.level, 'learning');
+assert.strictEqual(visLearning.hasCrown, false);
+
+// Fall 3: Stufe 1 (Hellgrün - Grundaufgabe)
+const visStep1 = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 3,
+  correctAttempts: 3,
+  repetitions: 3,
+  interval: 6,
+  masteredVariants: ['mult'],
+});
+assert.strictEqual(visStep1.level, 'green_step1');
+assert.strictEqual(visStep1.hasCrown, false);
+
+// Fall 4: Stufe 2 (Mittelgrün - Umkehraufgabe)
+const visStep2 = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 5,
+  correctAttempts: 5,
+  repetitions: 5,
+  interval: 10,
+  masteredVariants: ['mult', 'div'],
+});
+assert.strictEqual(visStep2.level, 'green_step2');
+assert.strictEqual(visStep2.hasCrown, false);
+
+// Fall 5: Stufe 3 (Dunkelgrün - Lückenaufgabe, Intervall < 14)
+const visStep3 = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 7,
+  correctAttempts: 7,
+  repetitions: 6,
+  interval: 10,
+  masteredVariants: ['mult', 'div', 'gap_mult_b'],
+});
+assert.strictEqual(visStep3.level, 'green_step3');
+assert.strictEqual(visStep3.hasCrown, false);
+
+// Fall 6: Langzeit-Meister mit Krone (Stufe 3 + Intervall >= 14)
+const visCrown = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 10,
+  correctAttempts: 10,
+  repetitions: 8,
+  interval: 21,
+  masteredVariants: ['mult', 'div', 'gap_mult_b'],
+});
+assert.strictEqual(visCrown.level, 'green_step3');
+assert.strictEqual(visCrown.hasCrown, true);
+
+// Fall 7: Zartes Rosa / Soft-Rot (kürzlicher Einzelfehler)
+const visWrongSoft = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 2,
+  correctAttempts: 1,
+  repetitions: 0,
+  interval: 1,
+  lastQuality: 0,
+  easeFactor: 2.3,
+});
+assert.strictEqual(visWrongSoft.level, 'wrong_soft');
+assert.strictEqual(visWrongSoft.hasCrown, false);
+
+// Fall 8: Dunkelrot / Hard-Rot (Wackelkandidat, EaseFactor < 2.0 oder Trefferquote < 65%)
+const visWrongHard = getFactVisualStatus({
+  ...baseFact,
+  totalAttempts: 5,
+  correctAttempts: 2,
+  repetitions: 0,
+  interval: 1,
+  lastQuality: 0,
+  easeFactor: 1.8,
+});
+assert.strictEqual(visWrongHard.level, 'wrong_hard');
+assert.strictEqual(visWrongHard.hasCrown, false);
+
+console.log('✓ Test 7 bestanden: 3 Grün-Stufen, 2 Rot-Stufen und Langzeit-Krone berechnen präzise.');
 
 console.log('=== ALLE DIDAKTISCHEN TESTS ERFOLGREICH BESTANDEN! ===');

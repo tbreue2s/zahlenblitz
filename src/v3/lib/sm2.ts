@@ -1,4 +1,9 @@
-import type { FactFamily, MasteryStatus, TaskVariant } from './types';
+import type {
+  FactFamily,
+  FactVisualStatus,
+  MasteryStatus,
+  TaskVariant,
+} from './types';
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const MIN_EASE_FACTOR = 1.3;
@@ -154,24 +159,105 @@ export function applySM2ToFact(
 }
 
 /**
- * Bestimmt den Status einer Faktenfamilie (für Matrix und Heatmap):
- * - 'new' (Grau): Noch nie geübt
- * - 'wrong' (Rot): Kürzlicher Fehler, muss wiederholt werden
- * - 'mastered' (Grün): Fest im Langzeitgedächtnis (mindestens 2 Bestätigungen mit gutem Tempo oder 1x Blitztempo)
- * - 'learning' (Gelb): Wird aktuell gelernt
+ * Bestimmt den differenzierten didaktischen Status für Matrix und Heatmap:
+ * - 3 Grün-Stufen: Grundaufgabe (Hellgrün) → Umkehrung (Mittelgrün) → Lücke (Dunkelgrün)
+ * - 2 Rot-Stufen: Soft-Fehler (Rosa) vs. Echter Wackelkandidat (Dunkelrot)
+ * - Gelb: 1x richtig gelöst, im Lernprozess
+ * - 👑 Krone: Alle 3 Stufen gemeistert UND Spaced-Repetition-Intervall >= 14 Tage!
+ */
+export function getFactVisualStatus(fact: FactFamily): FactVisualStatus {
+  if (fact.totalAttempts === 0) {
+    return {
+      level: 'fresh',
+      hasCrown: false,
+      label: 'Neu',
+      badge: '⚪',
+      shortDesc: 'Noch nie geübt',
+    };
+  }
+
+  // Fehler-Status
+  if (fact.repetitions === 0 || fact.lastQuality === 0) {
+    const mistakeCount = fact.totalAttempts - fact.correctAttempts;
+    const isHard =
+      (mistakeCount >= 2 && fact.correctAttempts / fact.totalAttempts < 0.65) ||
+      fact.easeFactor < 2.0;
+
+    if (isHard) {
+      return {
+        level: 'wrong_hard',
+        hasCrown: false,
+        label: 'Wackelkandidat',
+        badge: '🚨',
+        shortDesc: 'Mehrfach unsicher – gezielt wiederholen',
+      };
+    }
+
+    return {
+      level: 'wrong_soft',
+      hasCrown: false,
+      label: 'Wiederholen',
+      badge: '🌸',
+      shortDesc: 'Kürzlicher Fehler oder Vertipper',
+    };
+  }
+
+  // Prüfung auf gemeisterte Transfervarianten
+  const isMult = fact.mode === 'mult';
+  const hasInverse = fact.masteredVariants.includes(isMult ? 'div' : 'sub');
+  const hasGap = fact.masteredVariants.some((v) => v.startsWith('gap_'));
+
+  // Krone 👑: Alle 3 Stufen (Grundaufgabe, Umkehrung, Lücke) UND Spaced-Repetition-Intervall >= 14 Tage
+  const hasCrown = hasInverse && hasGap && fact.interval >= 14;
+
+  if (hasGap) {
+    return {
+      level: 'green_step3',
+      hasCrown,
+      label: hasCrown ? 'Langzeit-Meister 👑' : 'Meister-Können',
+      badge: hasCrown ? '👑' : '🌲',
+      shortDesc: hasCrown
+        ? 'Im Langzeitgedächtnis verankert (inkl. Lückenaufgabe)!'
+        : 'Stufe 3: Auch Lückenaufgaben gemeistert!',
+    };
+  }
+
+  if (hasInverse) {
+    return {
+      level: 'green_step2',
+      hasCrown: false,
+      label: 'Umkehr-Können',
+      badge: '🟩',
+      shortDesc: 'Stufe 2: Geteilt- bzw. Minusaufgabe gemeistert!',
+    };
+  }
+
+  if (fact.repetitions >= 2 || (fact.lastQuality ?? 0) >= 3) {
+    return {
+      level: 'green_step1',
+      hasCrown: false,
+      label: 'Basis-Können',
+      badge: '🟢',
+      shortDesc: 'Stufe 1: Grundaufgabe sitzt sicher!',
+    };
+  }
+
+  return {
+    level: 'learning',
+    hasCrown: false,
+    label: 'Im Lernen',
+    badge: '🟡',
+    shortDesc: 'Erste richtige Lösung, wird aktuell gefestigt',
+  };
+}
+
+/**
+ * Kompatibilitäts-Funktion für übergeordnete Filter
  */
 export function getFactMastery(fact: FactFamily): MasteryStatus {
-  if (fact.totalAttempts === 0) {
-    return 'new';
-  }
-  if (fact.repetitions === 0 || fact.lastQuality === 0) {
-    return 'wrong';
-  }
-  if (
-    (fact.repetitions >= 2 && (fact.lastQuality ?? 0) >= 3) ||
-    (fact.repetitions >= 1 && fact.lastQuality === 4)
-  ) {
-    return 'mastered';
-  }
+  const vis = getFactVisualStatus(fact);
+  if (vis.level === 'fresh') return 'new';
+  if (vis.level === 'wrong_soft' || vis.level === 'wrong_hard') return 'wrong';
+  if (vis.level === 'green_step2' || vis.level === 'green_step3' || vis.hasCrown) return 'mastered';
   return 'learning';
 }

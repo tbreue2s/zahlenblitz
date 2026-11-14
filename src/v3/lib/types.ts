@@ -34,6 +34,23 @@ export type DidacticStrategyMult =
 
 export type MasteryStatus = 'new' | 'wrong' | 'learning' | 'mastered';
 
+export type MasteryColorLevel =
+  | 'fresh'        // Weiß / Grau (Noch unberührt)
+  | 'wrong_soft'   // Rosa / Zartrot (Einmaliger Fehler / Vertipper)
+  | 'wrong_hard'   // Dunkelrot (Echter Wackelkandidat)
+  | 'learning'     // Gelb (1x richtig, noch am Anfang)
+  | 'green_step1'  // Hellgrün (Stufe 1: Grundaufgabe sitzt sicher)
+  | 'green_step2'  // Mittelgrün (Stufe 2: Umkehraufgabe gemeistert)
+  | 'green_step3'; // Dunkelgrün (Stufe 3: Lückenaufgabe gemeistert)
+
+export interface FactVisualStatus {
+  level: MasteryColorLevel;
+  hasCrown: boolean;
+  label: string;
+  badge: string;
+  shortDesc: string;
+}
+
 export interface FactFamily {
   id: string;                     // z.B. "pm_3_4" oder "mult_7_8"
   mode: GameMode;

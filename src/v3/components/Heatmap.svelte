@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getFactMastery } from '../lib/sm2';
-  import type { FactFamily, GameMode, MasteryStatus } from '../lib/types';
+  import { getFactMastery, getFactVisualStatus } from '../lib/sm2';
+  import type { FactFamily, FactVisualStatus, GameMode, MasteryStatus } from '../lib/types';
 
   interface Props {
     gameMode: GameMode;
@@ -21,27 +21,23 @@
   let selectedFact = $state<FactFamily | null>(null);
   let hoveredCell = $state<{ a: number; b: number } | null>(null);
   let activeFilter = $state<'none' | 'squares' | 'core' | 'bonds10' | 'doubles'>('none');
+  let showLegendModal = $state(false);
 
   function getFactForCell(a: number, b: number): FactFamily | undefined {
     return facts.find((f) => f.a === a && f.b === b);
   }
 
-  function getStatus(a: number, b: number): MasteryStatus {
+  function getVisual(a: number, b: number): FactVisualStatus {
     const f = getFactForCell(a, b);
-    return f ? getFactMastery(f) : 'new';
-  }
-
-  function getStatusLabel(st: MasteryStatus): string {
-    switch (st) {
-      case 'mastered':
-        return 'Gemeistert ⭐';
-      case 'learning':
-        return 'Im Lernen 🧠';
-      case 'wrong':
-        return 'Wiederholen ⚠️';
-      default:
-        return 'Neu ⏳';
-    }
+    return f
+      ? getFactVisualStatus(f)
+      : {
+          level: 'fresh',
+          hasCrown: false,
+          label: 'Neu',
+          badge: '⚪',
+          shortDesc: 'Noch nicht geübt',
+        };
   }
 
   function isHighlighted(a: number, b: number): boolean {
@@ -59,19 +55,27 @@
   }
 
   let counts = $derived.by(() => {
-    let mastered = 0;
+    let crowns = 0;
+    let step3 = 0;
+    let step2 = 0;
+    let step1 = 0;
     let learning = 0;
-    let wrong = 0;
+    let wrongSoft = 0;
+    let wrongHard = 0;
     let fresh = 0;
 
     for (const f of facts) {
-      const st = getFactMastery(f);
-      if (st === 'mastered') mastered++;
-      else if (st === 'wrong') wrong++;
-      else if (st === 'learning') learning++;
+      const vis = getFactVisualStatus(f);
+      if (vis.hasCrown) crowns++;
+      if (vis.level === 'green_step3') step3++;
+      else if (vis.level === 'green_step2') step2++;
+      else if (vis.level === 'green_step1') step1++;
+      else if (vis.level === 'wrong_hard') wrongHard++;
+      else if (vis.level === 'wrong_soft') wrongSoft++;
+      else if (vis.level === 'learning') learning++;
       else fresh++;
     }
-    return { mastered, learning, wrong, fresh };
+    return { crowns, step3, step2, step1, learning, wrongSoft, wrongHard, fresh };
   });
 
   let activeA = $derived(hoveredCell?.a ?? selectedFact?.a ?? null);
@@ -129,26 +133,43 @@
     </div>
   </div>
 
-  <!-- Status-Legende -->
-  <div class="flex items-center justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl mb-2.5">
-    <div class="flex items-center gap-1">
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-      <span>{counts.mastered} Gemeistert</span>
-    </div>
-    <div class="flex items-center gap-1">
-      <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-      <span>{counts.learning} Im Lernen</span>
-    </div>
-    {#if counts.wrong > 0}
-      <div class="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-extrabold">
-        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-        <span>{counts.wrong} Wiederholen</span>
+  <!-- Status-Legende & Info-Button -->
+  <div class="flex items-center justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl mb-2.5 gap-1.5 flex-wrap">
+    <div class="flex items-center gap-2 flex-wrap">
+      {#if counts.crowns > 0}
+        <div class="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-black" title="Langzeitgedächtnis (Krone)">
+          <span>👑</span>
+          <span>{counts.crowns}</span>
+        </div>
+      {/if}
+      <div class="flex items-center gap-1" title="Stufe 3: Lückenaufgabe gemeistert (Dunkelgrün)">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-700"></span>
+        <span>{counts.step3}</span>
       </div>
-    {/if}
-    <div class="flex items-center gap-1 text-slate-400">
-      <span class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></span>
-      <span>{counts.fresh} Neu</span>
+      <div class="flex items-center gap-1" title="Stufe 2: Umkehraufgabe gemeistert (Mittelgrün)">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+        <span>{counts.step2}</span>
+      </div>
+      <div class="flex items-center gap-1" title="Stufe 1: Grundaufgabe sitzt (Hellgrün)">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
+        <span>{counts.step1}</span>
+      </div>
+      {#if counts.wrongHard > 0}
+        <div class="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-black" title="Wackelkandidat (Dunkelrot)">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse"></span>
+          <span>{counts.wrongHard}</span>
+        </div>
+      {/if}
     </div>
+
+    <button
+      type="button"
+      onclick={() => (showLegendModal = true)}
+      class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold bg-transparent border-none p-0 cursor-pointer flex items-center gap-1"
+    >
+      <span>ℹ️</span>
+      <span>Legende</span>
+    </button>
   </div>
 
   <!-- 11x11 Matrix Grid (Zahlen oben und links für volle Übersicht) -->
@@ -192,8 +213,8 @@
 
         <!-- 10 Datenzellen für Zeile a -->
         {#each numbers as b}
-          {@const st = getStatus(a, b)}
           {@const fact = getFactForCell(a, b)}
+          {@const vis = getVisual(a, b)}
           {@const isSelected = selectedFact?.a === a && selectedFact?.b === b}
           {@const isHL = isHighlighted(a, b)}
           {@const isInCrosshair = activeA === a || activeB === b}
@@ -207,27 +228,38 @@
             }}
             onmouseenter={() => (hoveredCell = { a, b })}
             onmouseleave={() => (hoveredCell = null)}
-            class="aspect-square rounded-md transition-transform hover:scale-120 hover:z-20 cursor-pointer border-none p-0 flex items-center justify-center text-[8px] sm:text-[9.5px] font-black {
+            class="relative aspect-square rounded-md transition-transform hover:scale-120 hover:z-20 cursor-pointer border-none p-0 flex items-center justify-center text-[8px] sm:text-[9.5px] font-black {
               isSelected
                 ? 'ring-2 ring-indigo-500 scale-110 z-10'
                 : isHL
                 ? 'ring-2 ring-amber-400 z-10'
                 : ''
             } {
-              st === 'mastered'
-                ? 'bg-emerald-500 text-white shadow-xs'
-                : st === 'wrong'
-                ? 'bg-rose-500 text-white animate-pulse'
-                : st === 'learning'
-                ? 'bg-amber-400 text-amber-950'
+              vis.level === 'green_step3'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : vis.level === 'green_step2'
+                ? 'bg-emerald-500 text-white shadow-2xs'
+                : vis.level === 'green_step1'
+                ? 'bg-emerald-300 dark:bg-emerald-700/60 text-emerald-950 dark:text-emerald-100'
+                : vis.level === 'wrong_hard'
+                ? 'bg-rose-600 text-white animate-pulse'
+                : vis.level === 'wrong_soft'
+                ? 'bg-rose-200 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200'
+                : vis.level === 'learning'
+                ? 'bg-amber-300 dark:bg-amber-500/80 text-amber-950'
                 : isInCrosshair
                 ? 'bg-indigo-100/70 dark:bg-slate-700 text-indigo-900 dark:text-indigo-200'
                 : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }"
-            title="{a} {gameMode === 'mult' ? '×' : '+'} {b} = {fact?.c} ({getStatusLabel(st)})"
+            title="{a} {gameMode === 'mult' ? '×' : '+'} {b} = {fact?.c} ({vis.badge} {vis.label})"
             aria-label="{a} {gameMode === 'mult' ? 'mal' : 'plus'} {b} ist {fact?.c}"
           >
-            {fact ? fact.c : ''}
+            <span class="truncate">{fact ? fact.c : ''}</span>
+            {#if vis.hasCrown}
+              <span class="absolute -top-1 -right-0.5 text-[7px] sm:text-[8.5px] leading-none pointer-events-none drop-shadow">
+                👑
+              </span>
+            {/if}
           </button>
         {/each}
       {/each}
@@ -236,13 +268,15 @@
 
   <!-- Schnell-Inspektion bei ausgewählter Zelle -->
   {#if selectedFact}
+    {@const vis = getFactVisualStatus(selectedFact)}
     <div class="mt-2.5 p-2.5 sm:p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-2 animate-fade-in">
       <div class="truncate">
-        <div class="text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-100">
-          {selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}
+        <div class="text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5">
+          <span>{selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}</span>
+          <span>{vis.badge}</span>
         </div>
-        <div class="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold">
-          Status: {getStatusLabel(getFactMastery(selectedFact))} · {selectedFact.correctAttempts} von {selectedFact.totalAttempts} gelöst
+        <div class="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold truncate">
+          <span>{vis.label}</span> · <span>{vis.shortDesc}</span>
         </div>
       </div>
       {#if onPracticeFact}
@@ -261,3 +295,169 @@
     </div>
   {/if}
 </section>
+
+<!-- MODAL: INTERAKTIVE FARB-LEGENDE -->
+{#if showLegendModal}
+  <div
+    class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) showLegendModal = false;
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') showLegendModal = false;
+    }}
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Farb-Legende der Wissenskarte"
+  >
+    <div class="w-full max-w-md bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white m-0">
+            🗺️ Farb-Legende der Wissenskarte
+          </h3>
+          <p class="text-xs text-slate-400 m-0">
+            Was bedeuten die Farben auf der Rechentafel?
+          </p>
+        </div>
+        <button
+          type="button"
+          onclick={() => (showLegendModal = false)}
+          class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 text-xs font-bold border-none cursor-pointer flex items-center justify-center"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- DIE STUFEN -->
+      <div class="space-y-2.5 text-xs">
+        <!-- Krone -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
+          <span class="text-2xl shrink-0">👑</span>
+          <div>
+            <div class="font-black text-amber-900 dark:text-amber-200">
+              Goldene Krone · Langzeitgedächtnis
+            </div>
+            <div class="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 leading-snug">
+              Höchste Auszeichnung! Alle 3 Stufen gemeistert und im Langzeit-Spaced-Repetition über Wochen verankert (Intervall ≥ 14 Tage).
+            </div>
+          </div>
+        </div>
+
+        <!-- Dunkelgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-900/10 border border-emerald-800/30">
+          <div class="w-6 h-6 rounded-lg bg-emerald-700 text-white font-black text-xs flex items-center justify-center shrink-0">
+            3
+          </div>
+          <div>
+            <div class="font-black text-emerald-900 dark:text-emerald-300">
+              Sattes Dunkelgrün · Stufe 3 (Meister-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Auch flexible Lückenaufgaben ({gameMode === 'mult' ? '3 × ? = 21' : '4 + ? = 10'}) erfolgreich gemeistert!
+            </div>
+          </div>
+        </div>
+
+        <!-- Mittelgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+          <div class="w-6 h-6 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0">
+            2
+          </div>
+          <div>
+            <div class="font-black text-emerald-800 dark:text-emerald-300">
+              Mittelgrün · Stufe 2 (Umkehr-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Gegenrichtung ({gameMode === 'mult' ? 'Geteilt: 21 : 3 = 7' : 'Minus: 10 − 4 = 6'}) sicher verstanden und gelöst!
+            </div>
+          </div>
+        </div>
+
+        <!-- Hellgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-300/15 border border-emerald-400/40">
+          <div class="w-6 h-6 rounded-lg bg-emerald-300 text-emerald-950 font-black text-xs flex items-center justify-center shrink-0">
+            1
+          </div>
+          <div>
+            <div class="font-black text-emerald-800 dark:text-emerald-300">
+              Hellgrün · Stufe 1 (Basis-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Normale Grundaufgabe ({gameMode === 'mult' ? '3 × 7 = 21' : '4 + 6 = 10'}) sitzt sicher im Kopf!
+            </div>
+          </div>
+        </div>
+
+        <!-- Gelb -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-400/10 border border-amber-400/30">
+          <div class="w-6 h-6 rounded-lg bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
+            ⚡
+          </div>
+          <div>
+            <div class="font-black text-amber-900 dark:text-amber-300">
+              Gelb · Im Lernprozess
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              1x richtig gerechnet, wird aktuell geübt und gefestigt.
+            </div>
+          </div>
+        </div>
+
+        <!-- Rosa / Soft-Rot -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-300/15 border border-rose-300/40">
+          <div class="w-6 h-6 rounded-lg bg-rose-200 text-rose-900 font-black text-xs flex items-center justify-center shrink-0">
+            ?
+          </div>
+          <div>
+            <div class="font-black text-rose-800 dark:text-rose-300">
+              Zartes Rosa · Kürzlicher Fehler
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Einmaliger Rechenfehler oder Vertipper – kommt bald zur Wiederholung.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dunkelrot -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-600/10 border border-rose-600/30">
+          <div class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+            !
+          </div>
+          <div>
+            <div class="font-black text-rose-700 dark:text-rose-400">
+              Dunkelrot · Wackelkandidat
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Mehrfache Fehlversuche – kann gezielt über „Wackelkandidaten“ geübt werden.
+            </div>
+          </div>
+        </div>
+
+        <!-- Grau / Weiß -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+          <div class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 font-black text-xs flex items-center justify-center shrink-0">
+            ○
+          </div>
+          <div>
+            <div class="font-black text-slate-700 dark:text-slate-300">
+              Weiß / Grau · Noch neu
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+              Aufgabe wurde noch nicht entdeckt.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onclick={() => (showLegendModal = false)}
+        class="w-full mt-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs border-none cursor-pointer"
+      >
+        Verstanden
+      </button>
+    </div>
+  </div>
+{/if}

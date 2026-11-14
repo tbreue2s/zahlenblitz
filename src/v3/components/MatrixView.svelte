@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getFactMastery } from '../lib/sm2';
-  import type { FactFamily, GameMode, MasteryStatus, TaskVariant } from '../lib/types';
+  import { getFactMastery, getFactVisualStatus } from '../lib/sm2';
+  import type { FactFamily, FactVisualStatus, GameMode, MasteryStatus, TaskVariant } from '../lib/types';
 
   interface Props {
     gameMode: GameMode;
@@ -23,6 +23,7 @@
   let selectedFact = $state<FactFamily | null>(null);
   let hoveredCell = $state<{ a: number; b: number } | null>(null);
   let activeFilter = $state<'none' | 'squares' | 'core' | 'bonds10' | 'doubles'>('none');
+  let showLegendModal = $state(false);
 
   function getFact(a: number, b: number): FactFamily | undefined {
     return facts.find((f) => f.a === a && f.b === b);
@@ -31,6 +32,19 @@
   function getStatus(a: number, b: number): MasteryStatus {
     const f = getFact(a, b);
     return f ? getFactMastery(f) : 'new';
+  }
+
+  function getVisual(a: number, b: number): FactVisualStatus {
+    const f = getFact(a, b);
+    return f
+      ? getFactVisualStatus(f)
+      : {
+          level: 'fresh',
+          hasCrown: false,
+          label: 'Neu',
+          badge: '⚪',
+          shortDesc: 'Noch nicht geübt',
+        };
   }
 
   function isHighlighted(a: number, b: number): boolean {
@@ -51,19 +65,27 @@
   let activeB = $derived(hoveredCell?.b ?? selectedFact?.b ?? null);
 
   let counts = $derived.by(() => {
-    let mastered = 0;
+    let crowns = 0;
+    let step3 = 0;
+    let step2 = 0;
+    let step1 = 0;
     let learning = 0;
-    let wrong = 0;
+    let wrongSoft = 0;
+    let wrongHard = 0;
     let fresh = 0;
 
     for (const f of facts) {
-      const st = getFactMastery(f);
-      if (st === 'mastered') mastered++;
-      else if (st === 'wrong') wrong++;
-      else if (st === 'learning') learning++;
+      const vis = getFactVisualStatus(f);
+      if (vis.hasCrown) crowns++;
+      if (vis.level === 'green_step3') step3++;
+      else if (vis.level === 'green_step2') step2++;
+      else if (vis.level === 'green_step1') step1++;
+      else if (vis.level === 'wrong_hard') wrongHard++;
+      else if (vis.level === 'wrong_soft') wrongSoft++;
+      else if (vis.level === 'learning') learning++;
       else fresh++;
     }
-    return { mastered, learning, wrong, fresh };
+    return { crowns, step3, step2, step1, learning, wrongSoft, wrongHard, fresh };
   });
 
   function getVariantName(v: TaskVariant): string {
@@ -104,17 +126,28 @@
         {gameMode === 'mult' ? 'Große 1×1-Tafel' : 'Große Zahlen-Held-Tafel'}
       </h2>
       <p class="text-xs text-slate-400 m-0">
-        Alle 100 Fakten im didaktischen Beherrschungs-Status
+        Alle 100 Fakten im didaktischen Stufen- & Fehler-Status
       </p>
     </div>
 
-    <button
-      type="button"
-      onclick={onBack}
-      class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer"
-    >
-      ← Zurück
-    </button>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        onclick={() => (showLegendModal = true)}
+        class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/70 dark:border-indigo-800/60 cursor-pointer flex items-center gap-1.5 transition"
+      >
+        <span>ℹ️</span>
+        <span>Legende</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={onBack}
+        class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer"
+      >
+        ← Zurück
+      </button>
+    </div>
   </div>
 
   <!-- Modus-Umschalter -->
@@ -143,23 +176,43 @@
     </button>
   </div>
 
-  <!-- Status-Kacheln -->
-  <div class="grid grid-cols-4 gap-2 text-center text-xs">
-    <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-2.5 rounded-2xl">
-      <span class="text-lg font-black text-emerald-600 dark:text-emerald-400 block">{counts.mastered}</span>
-      <span class="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase">Gemeistert</span>
+  <!-- Status-Kacheln mit didaktischen Stufen -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+    <div class="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/60 p-2.5 rounded-2xl flex flex-col justify-center">
+      <div class="flex items-center justify-center gap-1">
+        <span class="text-base">👑</span>
+        <span class="text-lg font-black text-amber-700 dark:text-amber-300">{counts.crowns}</span>
+      </div>
+      <span class="text-[10px] text-amber-800 dark:text-amber-300 font-bold uppercase">Langzeit-Krone</span>
     </div>
-    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-2.5 rounded-2xl">
-      <span class="text-lg font-black text-amber-600 dark:text-amber-400 block">{counts.learning}</span>
-      <span class="text-[10px] text-amber-800 dark:text-amber-300 font-bold uppercase">Im Lernen</span>
+
+    <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-2.5 rounded-2xl flex flex-col justify-center">
+      <div class="flex items-center justify-center gap-2">
+        <span class="text-xs font-black text-emerald-800 dark:text-emerald-300" title="Stufe 3 (Lücke)">③ {counts.step3}</span>
+        <span class="text-xs font-black text-emerald-600 dark:text-emerald-400" title="Stufe 2 (Umkehr)">② {counts.step2}</span>
+        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400" title="Stufe 1 (Basis)">① {counts.step1}</span>
+      </div>
+      <span class="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase">
+        Grün-Stufen ({counts.step3 + counts.step2 + counts.step1})
+      </span>
     </div>
-    <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 p-2.5 rounded-2xl">
-      <span class="text-lg font-black text-rose-600 dark:text-rose-400 block">{counts.wrong}</span>
+
+    <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 p-2.5 rounded-2xl flex flex-col justify-center">
+      <div class="flex items-center justify-center gap-2">
+        {#if counts.wrongHard > 0}
+          <span class="text-sm font-black text-rose-600 dark:text-rose-400 animate-pulse" title="Wackelkandidaten">⚠️ {counts.wrongHard}</span>
+        {/if}
+        <span class="text-sm font-black text-rose-500 dark:text-rose-400" title="Kürzliche Fehler">{counts.wrongSoft}</span>
+      </div>
       <span class="text-[10px] text-rose-800 dark:text-rose-300 font-bold uppercase">Wiederholen</span>
     </div>
-    <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-2.5 rounded-2xl">
-      <span class="text-lg font-black text-slate-600 dark:text-slate-400 block">{counts.fresh}</span>
-      <span class="text-[10px] text-slate-500 font-bold uppercase">Neu</span>
+
+    <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-2.5 rounded-2xl flex flex-col justify-center">
+      <div class="flex items-center justify-center gap-2">
+        <span class="text-xs font-bold text-amber-600 dark:text-amber-400" title="Im Lernprozess">⚡ {counts.learning}</span>
+        <span class="text-sm font-black text-slate-600 dark:text-slate-400" title="Noch unentdeckt">○ {counts.fresh}</span>
+      </div>
+      <span class="text-[10px] text-slate-500 font-bold uppercase">Lernen / Neu</span>
     </div>
   </div>
 
@@ -263,8 +316,8 @@
 
           <!-- 10 Datenzellen für Zeile a -->
           {#each numbers as b}
-            {@const st = getStatus(a, b)}
             {@const f = getFact(a, b)}
+            {@const vis = getVisual(a, b)}
             {@const isSelected = selectedFact?.a === a && selectedFact?.b === b}
             {@const isHL = isHighlighted(a, b)}
             {@const isInCrosshair = activeA === a || activeB === b}
@@ -276,27 +329,38 @@
               }}
               onmouseenter={() => (hoveredCell = { a, b })}
               onmouseleave={() => (hoveredCell = null)}
-              class="aspect-square rounded-xl flex items-center justify-center text-xs sm:text-sm font-black transition-transform hover:scale-115 hover:z-20 cursor-pointer border-none {
+              class="relative aspect-square rounded-xl flex items-center justify-center text-xs sm:text-sm font-black transition-transform hover:scale-115 hover:z-20 cursor-pointer border-none {
                 isSelected
                   ? 'ring-3 ring-indigo-500 scale-110 z-10'
                   : isHL
                   ? 'ring-2 ring-amber-400 z-10'
                   : ''
               } {
-                st === 'mastered'
-                  ? 'bg-emerald-500 text-white shadow-xs'
-                  : st === 'wrong'
-                  ? 'bg-rose-500 text-white animate-pulse'
-                  : st === 'learning'
-                  ? 'bg-amber-400 text-amber-950'
+                vis.level === 'green_step3'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : vis.level === 'green_step2'
+                  ? 'bg-emerald-500 text-white shadow-2xs'
+                  : vis.level === 'green_step1'
+                  ? 'bg-emerald-300 dark:bg-emerald-700/60 text-emerald-950 dark:text-emerald-100'
+                  : vis.level === 'wrong_hard'
+                  ? 'bg-rose-600 text-white animate-pulse'
+                  : vis.level === 'wrong_soft'
+                  ? 'bg-rose-200 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200'
+                  : vis.level === 'learning'
+                  ? 'bg-amber-300 dark:bg-amber-500/80 text-amber-950'
                   : isInCrosshair
                   ? 'bg-indigo-100/80 dark:bg-slate-700 text-indigo-900 dark:text-indigo-200'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }"
-              title="{a} {gameMode === 'mult' ? '×' : '+'} {b} = {f?.c}"
+              title="{a} {gameMode === 'mult' ? '×' : '+'} {b} = {f?.c} ({vis.badge} {vis.label})"
               aria-label="{a} {gameMode === 'mult' ? 'mal' : 'plus'} {b} ist {f?.c}"
             >
-              {f ? f.c : ''}
+              <span class="truncate">{f ? f.c : ''}</span>
+              {#if vis.hasCrown}
+                <span class="absolute -top-1 -right-0.5 text-[8px] sm:text-[10px] leading-none pointer-events-none drop-shadow">
+                  👑
+                </span>
+              {/if}
             </button>
           {/each}
         {/each}
@@ -307,6 +371,7 @@
 
 <!-- FAKTEN-DETAIL MODAL -->
 {#if selectedFact}
+  {@const vis = getFactVisualStatus(selectedFact)}
   <div
     class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in"
     onclick={(e) => {
@@ -326,8 +391,9 @@
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
             Fakten-Familie
           </span>
-          <h3 class="text-2xl font-black text-slate-900 dark:text-white m-0">
-            {selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white m-0 flex items-center gap-2">
+            <span>{selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}</span>
+            <span>{vis.badge}</span>
           </h3>
         </div>
         <button
@@ -344,7 +410,7 @@
         <div>
           <span class="text-[9px] text-slate-400 block font-bold uppercase">Status</span>
           <span class="font-extrabold text-slate-800 dark:text-slate-200">
-            {getFactMastery(selectedFact)}
+            {vis.label}
           </span>
         </div>
         <div>
@@ -355,8 +421,11 @@
         </div>
         <div>
           <span class="text-[9px] text-slate-400 block font-bold uppercase">Intervall</span>
-          <span class="font-extrabold text-indigo-600 dark:text-indigo-400">
-            {selectedFact.interval} Tag(e)
+          <span class="font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-1">
+            {#if vis.hasCrown}
+              <span>👑</span>
+            {/if}
+            <span>{selectedFact.interval} Tag(e)</span>
           </span>
         </div>
       </div>
@@ -394,6 +463,172 @@
       >
         <span>🎯</span>
         <span>Diesen Fakt jetzt gezielt üben</span>
+      </button>
+    </div>
+  </div>
+{/if}
+
+<!-- MODAL: INTERAKTIVE FARB-LEGENDE -->
+{#if showLegendModal}
+  <div
+    class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) showLegendModal = false;
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') showLegendModal = false;
+    }}
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Farb-Legende der Rechentafel"
+  >
+    <div class="w-full max-w-md bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white m-0">
+            🗺️ Farb-Legende der Rechentafel
+          </h3>
+          <p class="text-xs text-slate-400 m-0">
+            Was bedeuten die Farben und Symbole?
+          </p>
+        </div>
+        <button
+          type="button"
+          onclick={() => (showLegendModal = false)}
+          class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 text-xs font-bold border-none cursor-pointer flex items-center justify-center"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- DIE STUFEN -->
+      <div class="space-y-2.5 text-xs">
+        <!-- Krone -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
+          <span class="text-2xl shrink-0">👑</span>
+          <div>
+            <div class="font-black text-amber-900 dark:text-amber-200">
+              Goldene Krone · Langzeitgedächtnis
+            </div>
+            <div class="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 leading-snug">
+              Höchste Auszeichnung! Alle 3 Stufen gemeistert und im Langzeit-Spaced-Repetition über Wochen verankert (Intervall ≥ 14 Tage).
+            </div>
+          </div>
+        </div>
+
+        <!-- Dunkelgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-900/10 border border-emerald-800/30">
+          <div class="w-6 h-6 rounded-lg bg-emerald-700 text-white font-black text-xs flex items-center justify-center shrink-0">
+            3
+          </div>
+          <div>
+            <div class="font-black text-emerald-900 dark:text-emerald-300">
+              Sattes Dunkelgrün · Stufe 3 (Meister-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Auch flexible Lückenaufgaben ({gameMode === 'mult' ? '3 × ? = 21' : '4 + ? = 10'}) erfolgreich gemeistert!
+            </div>
+          </div>
+        </div>
+
+        <!-- Mittelgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+          <div class="w-6 h-6 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0">
+            2
+          </div>
+          <div>
+            <div class="font-black text-emerald-800 dark:text-emerald-300">
+              Mittelgrün · Stufe 2 (Umkehr-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Gegenrichtung ({gameMode === 'mult' ? 'Geteilt: 21 : 3 = 7' : 'Minus: 10 − 4 = 6'}) sicher verstanden und gelöst!
+            </div>
+          </div>
+        </div>
+
+        <!-- Hellgrün -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-emerald-300/15 border border-emerald-400/40">
+          <div class="w-6 h-6 rounded-lg bg-emerald-300 text-emerald-950 font-black text-xs flex items-center justify-center shrink-0">
+            1
+          </div>
+          <div>
+            <div class="font-black text-emerald-800 dark:text-emerald-300">
+              Hellgrün · Stufe 1 (Basis-Können)
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Normale Grundaufgabe ({gameMode === 'mult' ? '3 × 7 = 21' : '4 + 6 = 10'}) sitzt sicher im Kopf!
+            </div>
+          </div>
+        </div>
+
+        <!-- Gelb -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-amber-400/10 border border-amber-400/30">
+          <div class="w-6 h-6 rounded-lg bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
+            ⚡
+          </div>
+          <div>
+            <div class="font-black text-amber-900 dark:text-amber-300">
+              Gelb · Im Lernprozess
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              1x richtig gerechnet, wird aktuell geübt und gefestigt.
+            </div>
+          </div>
+        </div>
+
+        <!-- Rosa / Soft-Rot -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-300/15 border border-rose-300/40">
+          <div class="w-6 h-6 rounded-lg bg-rose-200 text-rose-900 font-black text-xs flex items-center justify-center shrink-0">
+            ?
+          </div>
+          <div>
+            <div class="font-black text-rose-800 dark:text-rose-300">
+              Zartes Rosa · Kürzlicher Fehler
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Einmaliger Rechenfehler oder Vertipper – kommt bald zur Wiederholung.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dunkelrot -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-rose-600/10 border border-rose-600/30">
+          <div class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+            !
+          </div>
+          <div>
+            <div class="font-black text-rose-700 dark:text-rose-400">
+              Dunkelrot · Wackelkandidat
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+              Mehrfache Fehlversuche – kann gezielt über „Wackelkandidaten“ geübt werden.
+            </div>
+          </div>
+        </div>
+
+        <!-- Grau / Weiß -->
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+          <div class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 font-black text-xs flex items-center justify-center shrink-0">
+            ○
+          </div>
+          <div>
+            <div class="font-black text-slate-700 dark:text-slate-300">
+              Weiß / Grau · Noch neu
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+              Aufgabe wurde noch nicht entdeckt.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onclick={() => (showLegendModal = false)}
+        class="w-full mt-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs border-none cursor-pointer"
+      >
+        Verstanden
       </button>
     </div>
   </div>
