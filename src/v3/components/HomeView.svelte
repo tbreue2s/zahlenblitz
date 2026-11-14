@@ -201,73 +201,6 @@
     </button>
   </section>
 
-  <!-- 3b. ZWEI TRAININGS-MODI: WACKELKANDIDATEN & 60s BLITZ-CHALLENGE -->
-  <div class="grid grid-cols-2 gap-2.5">
-    <!-- Wackelkandidaten-Trainer -->
-    <button
-      type="button"
-      onclick={onStartWeakSpots}
-      disabled={weakSpotCount === 0}
-      class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between {
-        weakSpotCount > 0
-          ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 cursor-pointer shadow-2xs'
-          : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 opacity-70 cursor-default'
-      }"
-    >
-      <div>
-        <div class="flex items-center justify-between">
-          <span class="text-base">🧠</span>
-          <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full {
-            weakSpotCount > 0
-              ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
-              : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-          }">
-            {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest!'}
-          </span>
-        </div>
-        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
-          Wackelkandidaten
-        </div>
-        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-          {weakSpotCount > 0 ? 'Schwierige Aufgaben gezielt festigen' : 'Keine Wackelkandidaten!'}
-        </div>
-      </div>
-      <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
-        {#if weakSpotCount > 0}
-          <span>Starten</span> <span>›</span>
-        {:else}
-          <span class="text-emerald-600 dark:text-emerald-400">Alles sicher ✓</span>
-        {/if}
-      </div>
-    </button>
-
-    <!-- 60s Blitz-Challenge -->
-    <button
-      type="button"
-      onclick={onStartBlitz}
-      class="card-press text-left p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800/60 transition cursor-pointer flex flex-col justify-between shadow-2xs"
-    >
-      <div>
-        <div class="flex items-center justify-between">
-          <span class="text-base">⚡</span>
-          <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full bg-indigo-200 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200">
-            60s Sprint
-          </span>
-        </div>
-        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
-          Blitz-Challenge
-        </div>
-        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-          Wie viele schaffst du in 1 Minute?
-        </div>
-      </div>
-      <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-2 flex items-center justify-between">
-        <span>Rekord: {stats.blitzHighscore ?? 0}</span>
-        <span>Starten ›</span>
-      </div>
-    </button>
-  </div>
-
   <!-- 4. WISSENSKARTE (10x10 RECHENTAFEL DIREKT AUF DEM HAUPTBILDSCHIRM) -->
   <Heatmap
     {gameMode}
@@ -275,6 +208,81 @@
     onPracticeFact={onPracticeFact}
     onOpenFullscreen={onOpenMatrix}
   />
+
+  <!-- 5. WEITERE TRAININGS-MODI: WACKELKANDIDATEN & 60s BLITZ-CHALLENGE -->
+  <section class="space-y-1.5" aria-label="Weitere Trainingsmodi">
+    <div class="flex items-center justify-between px-1">
+      <span class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        Zusatz-Training &amp; Herausforderung
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2.5">
+      <!-- Wackelkandidaten-Trainer -->
+      <button
+        type="button"
+        onclick={onStartWeakSpots}
+        disabled={weakSpotCount === 0}
+        class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between {
+          weakSpotCount > 0
+            ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 cursor-pointer shadow-2xs'
+            : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 opacity-70 cursor-default'
+        }"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-base">🧠</span>
+            <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full {
+              weakSpotCount > 0
+                ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
+                : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+            }">
+              {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest!'}
+            </span>
+          </div>
+          <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
+            Wackelkandidaten
+          </div>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+            {weakSpotCount > 0 ? 'Schwierige Aufgaben gezielt festigen' : 'Keine Wackelkandidaten!'}
+          </div>
+        </div>
+        <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+          {#if weakSpotCount > 0}
+            <span>Starten</span> <span>›</span>
+          {:else}
+            <span class="text-emerald-600 dark:text-emerald-400">Alles sicher ✓</span>
+          {/if}
+        </div>
+      </button>
+
+      <!-- 60s Blitz-Challenge -->
+      <button
+        type="button"
+        onclick={onStartBlitz}
+        class="card-press text-left p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800/60 transition cursor-pointer flex flex-col justify-between shadow-2xs"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-base">⚡</span>
+            <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full bg-indigo-200 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200">
+              60s Sprint
+            </span>
+          </div>
+          <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
+            Blitz-Challenge
+          </div>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+            Wie viele schaffst du in 1 Minute?
+          </div>
+        </div>
+        <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-2 flex items-center justify-between">
+          <span>Rekord: {stats.blitzHighscore ?? 0}</span>
+          <span>Starten ›</span>
+        </div>
+      </button>
+    </div>
+  </section>
 
   <!-- 6. FOOTER: OPTIONEN, IMPRESSUM & DATENSCHUTZ, RELOAD -->
   <footer class="pt-3 pb-4 flex items-center justify-between text-slate-400 dark:text-slate-500 text-[11px] border-t border-slate-100 dark:border-slate-800/80">
