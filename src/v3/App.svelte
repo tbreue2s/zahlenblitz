@@ -212,6 +212,26 @@
     }
   }
 
+  function handleSwitchProfileGameMode(profileId: string, nextMode: GameMode) {
+    const next = profiles.map((p) =>
+      p.id === profileId ? { ...p, activeGameMode: nextMode } : p
+    );
+    persistAll(next, activeProfileId);
+  }
+
+  function handleRestoreProfile(restored: UserProfileV3) {
+    const isSingleDefault =
+      profiles.length === 1 &&
+      profiles[0].name === 'Spieler 1' &&
+      profiles[0].multStats.totalSolved === 0 &&
+      profiles[0].plusMinusStats.totalSolved === 0;
+
+    const base = isSingleDefault ? [] : profiles;
+    if (!base.some((p) => p.id === restored.id)) {
+      persistAll([...base, restored], restored.id);
+    }
+  }
+
   function handleImportSuccess(imported: UserProfileV3[]) {
     const keepActive = imported.some((p) => p.id === activeProfileId)
       ? activeProfileId
@@ -277,14 +297,14 @@
   <!-- Benutzer- & Optionen-Modal -->
   {#if currentScreen === 'users'}
     <UserModal
-      {gameMode}
       {profiles}
       activeProfileId={activeProfile.id}
-      onSwitchGameMode={handleSwitchGameMode}
+      onSwitchProfileGameMode={handleSwitchProfileGameMode}
       onSelectProfile={handleSelectProfile}
       onCreateProfile={handleCreateProfile}
       onUpdateProfile={handleUpdateProfile}
       onDeleteProfile={handleDeleteProfile}
+      onRestoreProfile={handleRestoreProfile}
       onImportSuccess={handleImportSuccess}
       onClose={() => (currentScreen = 'home')}
     />

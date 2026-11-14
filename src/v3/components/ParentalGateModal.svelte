@@ -18,56 +18,54 @@
 
   interface GateChallenge {
     question: string;
-    hint: string;
+    word: string;
     solution: number;
   }
 
-  const numberWordMap: Record<number, string> = {
-    247: 'Zweihundertsiebenundvierzig',
-    384: 'Dreihundertvierundachtzig',
-    519: 'Fünfhundertneunzehn',
-    642: 'Sechshundertzweiundvierzig',
-    738: 'Siebenhundertachtunddreißig',
-    891: 'Achthundertneunundneunzig',
-    926: 'Neunhundertsechsundzwanzig',
-    475: 'Vierhundertfünfundsiebzig',
-    682: 'Sechshundertzweiundachtzig',
-    359: 'Dreihundertneunundfünfzig',
-  };
+  function toGermanNumberWord(n: number): string {
+    const units = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+    const teens: Record<number, string> = {
+      10: 'zehn', 11: 'elf', 12: 'zwölf', 13: 'dreizehn', 14: 'vierzehn',
+      15: 'fünfzehn', 16: 'sechzehn', 17: 'siebzehn', 18: 'achtzehn', 19: 'neunzehn'
+    };
+    const tens = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+    const hundreds = [
+      '', 'Einhundert', 'Zweihundert', 'Dreihundert', 'Vierhundert',
+      'Fünfhundert', 'Sechshundert', 'Siebenhundert', 'Achthundert', 'Neunhundert'
+    ];
+
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+
+    let word = hundreds[h] || '';
+
+    if (remainder === 0) {
+      return word;
+    }
+    if (remainder < 10) {
+      const unitWord = remainder === 1 ? 'eins' : units[remainder];
+      return word + unitWord;
+    }
+    if (remainder >= 10 && remainder < 20) {
+      return word + teens[remainder];
+    }
+    const u = remainder % 10;
+    const t = Math.floor(remainder / 10);
+    if (u === 0) {
+      return word + tens[t];
+    }
+    const unitPrefix = u === 1 ? 'ein' : units[u];
+    return word + unitPrefix + 'und' + tens[t];
+  }
 
   function generateChallenge(): GateChallenge {
-    // 50% Wahrscheinlichkeit für Zahlwort-Rätsel, 50% für zweistellige Kopfrechenaufgabe
-    const isWordChallenge = Math.random() < 0.5;
-
-    if (isWordChallenge) {
-      const numbers = Object.keys(numberWordMap).map(Number);
-      const chosen = numbers[Math.floor(Math.random() * numbers.length)];
-      return {
-        question: `Tippe die Ziffern für:`,
-        hint: `„${numberWordMap[chosen]}“`,
-        solution: chosen,
-      };
-    } else {
-      // Zweistellige Mathe-Aufgabe (Klasse 5+ Niveau)
-      const mathType = Math.random() < 0.5 ? 'add' : 'mult';
-      if (mathType === 'add') {
-        const a = 28 + Math.floor(Math.random() * 40); // 28..67
-        const b = 17 + Math.floor(Math.random() * 35); // 17..51
-        return {
-          question: `Löse diese Rechenaufgabe:`,
-          hint: `${a} + ${b} = ?`,
-          solution: a + b,
-        };
-      } else {
-        const a = 13 + Math.floor(Math.random() * 6); // 13..18
-        const b = 4 + Math.floor(Math.random() * 5);  // 4..8
-        return {
-          question: `Löse diese Multiplikation:`,
-          hint: `${a} × ${b} = ?`,
-          solution: a * b,
-        };
-      }
-    }
+    // Ausschliesslich dreistellige Zahlwörter (100 bis 999)
+    const n = 100 + Math.floor(Math.random() * 900);
+    return {
+      question: 'Tippe die Ziffern für das Zahlwort:',
+      word: toGermanNumberWord(n),
+      solution: n,
+    };
   }
 
   let challenge = $state<GateChallenge>(generateChallenge());
@@ -172,8 +170,8 @@
       <span class="text-xs text-indigo-700 dark:text-indigo-300 font-bold block">
         {challenge.question}
       </span>
-      <div class="text-lg font-black text-indigo-950 dark:text-indigo-100 py-1">
-        {challenge.hint}
+      <div class="text-base sm:text-lg font-black text-indigo-950 dark:text-indigo-100 py-1 tracking-wide">
+        „{challenge.word}“
       </div>
     </div>
 

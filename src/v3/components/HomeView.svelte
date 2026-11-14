@@ -105,8 +105,8 @@
             </span>
             <span class="text-[10px] text-slate-400 font-black">▾</span>
           </div>
-          <span class="text-[11px] font-medium text-slate-400 dark:text-slate-400">
-            ZahlenBlitz v3.0
+          <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+            {gameMode === 'mult' ? '1x1 Meister' : 'Zahlen-Held'}
           </span>
         </div>
       </button>
@@ -195,32 +195,6 @@
     </div>
   </header>
 
-  <!-- 2. AKTIVER LERNBEREICH (KOMPAKT & KINDGERECHT) -->
-  <div class="flex items-center justify-between bg-white dark:bg-[#111827] px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-    <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-base shrink-0">
-        {gameMode === 'mult' ? '✖️' : '➕'}
-      </div>
-      <div>
-        <span class="font-black text-xs text-slate-900 dark:text-white block leading-tight">
-          {gameMode === 'mult' ? '1×1 Meister (× / :)' : 'Zahlen-Held (+ / −)'}
-        </span>
-        <span class="text-[10px] text-slate-400 font-medium">
-          {gameMode === 'mult' ? 'Kleines Einmaleins (Klasse 2–4)' : 'Zahlenraum bis 20 (Klasse 1 & 2)'}
-        </span>
-      </div>
-    </div>
-
-    <button
-      type="button"
-      onclick={() => (showParentalGate = true)}
-      class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:underline bg-transparent border-none p-0 cursor-pointer flex items-center gap-1"
-      title="Lernbereich im Elternbereich umstellen"
-    >
-      <span>Ändern</span>
-      <span class="text-[9px]">🔒</span>
-    </button>
-  </div>
 
   <!-- 3. HERO: TAGES-MISSION -->
   <section class="bg-gradient-to-br from-indigo-950 via-[#0f172a] to-[#0f172a] rounded-3xl p-4 text-white border border-indigo-500/20 shadow-sm relative overflow-hidden" aria-label="Tages-Mission">

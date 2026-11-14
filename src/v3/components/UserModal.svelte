@@ -10,30 +10,34 @@
   import type { GameMode, UserProfileV3 } from '../lib/types';
 
   interface Props {
-    gameMode: GameMode;
+    gameMode?: GameMode;
     profiles: UserProfileV3[];
     activeProfileId: string;
-    onSwitchGameMode: (mode: GameMode) => void;
+    onSwitchProfileGameMode: (profileId: string, mode: GameMode) => void;
     onSelectProfile: (id: string) => void;
     onCreateProfile: (name: string, avatar: string) => void;
     onUpdateProfile: (id: string, name: string, avatar: string) => void;
     onDeleteProfile: (id: string) => void;
+    onRestoreProfile: (prof: UserProfileV3) => void;
     onImportSuccess: (imported: UserProfileV3[]) => void;
     onClose: () => void;
   }
 
   let {
-    gameMode,
     profiles,
     activeProfileId,
-    onSwitchGameMode,
+    onSwitchProfileGameMode,
     onSelectProfile,
     onCreateProfile,
     onUpdateProfile,
     onDeleteProfile,
+    onRestoreProfile,
     onImportSuccess,
     onClose,
   }: Props = $props();
+
+  let profToDelete = $state<UserProfileV3 | null>(null);
+  let deletedStack = $state<UserProfileV3[]>([]);
 
   let newName = $state('');
   let selectedAvatar = $state(AVAILABLE_AVATARS[0]);
@@ -202,46 +206,6 @@
       </button>
     </div>
 
-    <!-- LERNBEREICH / SPIELMODUS (ELTERN-EINSTELLUNG) -->
-    <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5">
-          <span>🎯</span>
-          <span>Aktiver Lernbereich</span>
-        </span>
-        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
-          Für aktives Kind festlegen
-        </span>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onclick={() => onSwitchGameMode('plusminus')}
-          class="py-2.5 px-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition cursor-pointer {
-            gameMode === 'plusminus'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-400'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400'
-          }"
-        >
-          <span class="text-xl">➕</span>
-          <span class="font-black text-xs">Zahlen-Held (+ / −)</span>
-          <span class="text-[9.5px] opacity-85 font-medium">Klasse 1 &amp; 2 (Zahlenraum 20)</span>
-        </button>
-        <button
-          type="button"
-          onclick={() => onSwitchGameMode('mult')}
-          class="py-2.5 px-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition cursor-pointer {
-            gameMode === 'mult'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-400'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400'
-          }"
-        >
-          <span class="text-xl">✖️</span>
-          <span class="font-black text-xs">1×1 Meister (× / :)</span>
-          <span class="text-[9.5px] opacity-85 font-medium">Klasse 2, 3 &amp; 4 (Einmaleins)</span>
-        </button>
-      </div>
-    </div>
 
     <!-- ERSCHEINUNGSBILD / THEME SWITCHER -->
     <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-2">
@@ -294,66 +258,175 @@
     </div>
 
     <!-- 1. SPIELER-LISTE -->
-    <div class="space-y-2">
-      <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
-        Aktive Spieler
-      </span>
+    <div class="space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+          Aktive Spieler
+        </span>
+        {#if deletedStack.length > 0}
+          <span class="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+            {deletedStack.length} im Papierkorb
+          </span>
+        {/if}
+      </div>
+
+      <!-- RÜCKGÄNGIG-BANNER FÜR GELÖSCHTE SPIELER -->
+      {#if deletedStack.length > 0}
+        {@const lastDeleted = deletedStack[deletedStack.length - 1]}
+        <div class="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-300 dark:border-amber-700/80 rounded-2xl animate-fade-in shadow-2xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="text-xl shrink-0">🗑️</span>
+            <div class="truncate">
+              <span class="text-xs font-black text-amber-950 dark:text-amber-100 block truncate">
+                „{lastDeleted.name}“ gelöscht
+              </span>
+              <span class="text-[10px] text-amber-700 dark:text-amber-300">
+                Wiederherstellen vor Verlassen der Optionen
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onclick={() => {
+              const restored = deletedStack[deletedStack.length - 1];
+              deletedStack = deletedStack.slice(0, -1);
+              if (restored) {
+                onRestoreProfile(restored);
+              }
+            }}
+            class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0"
+            title="Gelöschten Spieler wiederherstellen"
+          >
+            <span>↶</span>
+            <span>Rückgängig</span>
+          </button>
+        </div>
+      {/if}
+
+      <!-- BESTÄTIGUNGSDIALOG VOR DEM LÖSCHEN -->
+      {#if profToDelete}
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/60 rounded-2xl border-2 border-rose-300 dark:border-rose-800 space-y-3 animate-fade-in shadow-md">
+          <div class="flex items-center gap-2 text-rose-800 dark:text-rose-200">
+            <span class="text-xl">⚠️</span>
+            <span class="text-xs font-black">Spieler wirklich löschen?</span>
+          </div>
+          <p class="text-xs text-rose-900 dark:text-rose-100 m-0 leading-relaxed">
+            Möchtest du das Profil von <strong>„{profToDelete.name}“</strong> {profToDelete.avatar} wirklich löschen? Alle gesammelten Sterne und Fortschritte dieses Profils gehen verloren.
+          </p>
+          <div class="flex gap-2 pt-1">
+            <button
+              type="button"
+              onclick={() => (profToDelete = null)}
+              class="flex-1 py-2 px-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border-none cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onclick={() => {
+                const target = profToDelete;
+                profToDelete = null;
+                if (target) {
+                  deletedStack = [...deletedStack, target];
+                  onDeleteProfile(target.id);
+                }
+              }}
+              class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black border-none cursor-pointer shadow-xs"
+            >
+              Löschen bestätigen
+            </button>
+          </div>
+        </div>
+      {/if}
 
       {#each profiles as prof (prof.id)}
         {@const isCurrent = prof.id === activeProfileId}
-        <div class="flex items-center justify-between p-3 rounded-2xl border transition {
+        <div class="p-3 rounded-2xl border transition space-y-2.5 {
           isCurrent
             ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800'
             : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
         }">
-          <button
-            type="button"
-            onclick={() => onSelectProfile(prof.id)}
-            class="flex items-center gap-3 text-left bg-transparent border-none cursor-pointer flex-1 min-w-0"
-          >
-            <span class="text-2xl shrink-0">{prof.avatar}</span>
-            <div class="truncate">
-              <div class="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
-                <span>{prof.name}</span>
-                {#if isCurrent}
-                  <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-1.5 rounded">
-                    Aktiv
-                  </span>
-                {/if}
+          <div class="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onclick={() => onSelectProfile(prof.id)}
+              class="flex items-center gap-3 text-left bg-transparent border-none cursor-pointer flex-1 min-w-0"
+            >
+              <span class="text-2xl shrink-0">{prof.avatar}</span>
+              <div class="truncate">
+                <div class="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
+                  <span>{prof.name}</span>
+                  {#if isCurrent}
+                    <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-1.5 rounded">
+                      Aktiv
+                    </span>
+                  {/if}
+                </div>
+                <div class="text-[10px] text-slate-400 font-semibold">
+                  ⭐ {prof.multStats.stars + prof.plusMinusStats.stars} gesammelte Sterne
+                </div>
               </div>
-              <div class="text-[10px] text-slate-400 font-semibold">
-                ⭐ {prof.multStats.stars + prof.plusMinusStats.stars} gesammelte Sterne
-              </div>
-            </div>
-          </button>
+            </button>
 
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              onclick={() => downloadProfileBackupV3(prof)}
-              class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
-              title="Profil als Backup (.json) sichern"
-            >
-              💾
-            </button>
-            <button
-              type="button"
-              onclick={() => startEdit(prof)}
-              class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
-              title="Profil bearbeiten"
-            >
-              ✏️
-            </button>
-            {#if profiles.length > 1}
+            <div class="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onclick={() => onDeleteProfile(prof.id)}
-                class="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 text-xs"
-                title="Profil löschen"
+                onclick={() => downloadProfileBackupV3(prof)}
+                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs bg-transparent border-none cursor-pointer"
+                title="Profil als Backup (.json) sichern"
               >
-                🗑️
+                💾
               </button>
-            {/if}
+              <button
+                type="button"
+                onclick={() => startEdit(prof)}
+                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs bg-transparent border-none cursor-pointer"
+                title="Profil bearbeiten"
+              >
+                ✏️
+              </button>
+              {#if profiles.length > 1}
+                <button
+                  type="button"
+                  onclick={() => (profToDelete = prof)}
+                  class="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 text-xs bg-transparent border-none cursor-pointer"
+                  title="Profil löschen"
+                >
+                  🗑️
+                </button>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Modus-Umschalter direkt am Spieler -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+            <span class="text-[10px] font-extrabold text-slate-500 dark:text-slate-400">
+              Lernmodus:
+            </span>
+            <div class="inline-flex rounded-lg p-0.5 bg-slate-200/70 dark:bg-slate-700/60 border border-slate-300/40 dark:border-slate-600/40">
+              <button
+                type="button"
+                onclick={() => onSwitchProfileGameMode(prof.id, 'plusminus')}
+                class="px-2 py-1 rounded-md text-[10px] font-extrabold transition cursor-pointer border-none {
+                  (prof.activeGameMode ?? 'mult') === 'plusminus'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }"
+              >
+                ➕ Zahlen-Held
+              </button>
+              <button
+                type="button"
+                onclick={() => onSwitchProfileGameMode(prof.id, 'mult')}
+                class="px-2 py-1 rounded-md text-[10px] font-extrabold transition cursor-pointer border-none {
+                  (prof.activeGameMode ?? 'mult') === 'mult'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }"
+              >
+                ✖️ 1x1 Meister
+              </button>
+            </div>
           </div>
         </div>
       {/each}
@@ -492,24 +565,5 @@
       />
     </div>
 
-    <!-- 5. WECHSEL ZU ANDEREN VERSIONEN -->
-    <div class="text-center pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1">
-      <div>
-        <a
-          href={typeof window !== 'undefined' && window.location.pathname.includes('/v3') ? '../v2/' : './v2/'}
-          class="text-[11px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-bold hover:underline inline-block"
-        >
-          ‹ Zur vorherigen Version (v2) wechseln
-        </a>
-      </div>
-      <div>
-        <a
-          href={typeof window !== 'undefined' && window.location.pathname.includes('/v3') ? '../v1/' : './v1/'}
-          class="text-[10px] text-slate-400 hover:text-slate-500 font-medium hover:underline inline-block"
-        >
-          Zur klassischen Version (v1) wechseln ›
-        </a>
-      </div>
-    </div>
   </div>
 </div>
