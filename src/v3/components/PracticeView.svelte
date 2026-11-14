@@ -6,6 +6,11 @@
     playKeyTap,
     playSuccessSound,
   } from '../lib/audio';
+  import {
+    hapticCelebration,
+    hapticError,
+    hapticSuccess,
+  } from '../lib/haptics';
   import type { QueuedTaskV3 } from '../lib/chapters';
   import { formatEquationPartsV3 } from '../lib/generator';
   import { applySM2ToFact, FAST_THRESHOLD_MS } from '../lib/sm2';
@@ -128,6 +133,7 @@
         feedbackSubtitle = 'Denkfehler verstanden! Morgen noch einmal zur Festigung.';
         feedbackState = 'retry_correct';
         playSuccessSound(soundEnabled, false);
+        hapticSuccess();
 
         factToSave = {
           ...currentTask.fact,
@@ -152,6 +158,7 @@
         feedbackTitle = 'Schau dir die Lösung genau an:';
         feedbackSubtitle = 'Merke dir den Rechenweg für gleich.';
         playErrorSound(soundEnabled);
+        hapticError();
 
         factToSave = {
           ...currentTask.fact,
@@ -184,6 +191,7 @@
         sessionCorrectFirstTry++;
         feedbackState = 'correct';
         playSuccessSound(soundEnabled, result.quality === 4);
+        hapticSuccess();
         starsToAward = result.starsEarned;
         sessionStars += starsToAward;
 
@@ -206,6 +214,7 @@
         lastUserAnswer = userAnswer;
         lastQuality = 0;
         playErrorSound(soundEnabled);
+        hapticError();
         retryFactIds.add(currentTask.fact.id);
 
         const result = applySM2ToFact(
@@ -238,6 +247,7 @@
     } else {
       sessionFinished = true;
       playCelebrationSound(soundEnabled);
+      hapticCelebration();
     }
   }
 </script>

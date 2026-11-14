@@ -6,6 +6,11 @@
     playKeyTap,
     playSuccessSound,
   } from '../lib/audio';
+  import {
+    hapticCelebration,
+    hapticError,
+    hapticSuccess,
+  } from '../lib/haptics';
   import type { QueuedTaskV3 } from '../lib/chapters';
   import { formatEquationPartsV3 } from '../lib/generator';
   import { buildBlitzChallengeQueueV3 } from '../lib/storage';
@@ -64,6 +69,7 @@
     if (timerInterval) clearInterval(timerInterval);
     isGameOver = true;
     playCelebrationSound(soundEnabled);
+    hapticCelebration();
 
     // Mindestens 1 Stern, +1 Stern je 3 richtige Antworten
     starsEarned = Math.max(1, Math.floor(score / 3));
@@ -110,6 +116,7 @@
   function handleSuccess() {
     score++;
     playSuccessSound(soundEnabled, true);
+    hapticSuccess();
     flashEffect = 'green';
     setTimeout(() => {
       flashEffect = null;
@@ -128,6 +135,7 @@
   function handleMistake() {
     mistakes++;
     playErrorSound(soundEnabled);
+    hapticError();
     flashEffect = 'red';
     setTimeout(() => {
       flashEffect = null;

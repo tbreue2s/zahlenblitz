@@ -22,7 +22,7 @@
     <p class="address-block">
       <strong>Thomas Breuer</strong><br />
       Zur Lüppich 5, 53773 Hennef<br />
-      E-Mail: <a href="mailto:email.breuer@gmail.com">email.breuer@gmail.com</a>
+      E-Mail: email.breuer@gmail.com
     </p>
     <p>
       <strong>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:</strong><br />
@@ -42,7 +42,7 @@
       Thomas Breuer<br />
       Zur Lüppich 5<br />
       53773 Hennef<br /><br />
-      E-Mail: <a href="mailto:email.breuer@gmail.com">email.breuer@gmail.com</a>
+      E-Mail: email.breuer@gmail.com
     </p>
 
     <h4>2. Grundlegendes zur Datenverarbeitung</h4>
@@ -210,12 +210,6 @@
     margin-bottom: 4px;
   }
 
-  a {
-    color: #4f46e5;
-    text-decoration: underline;
-    font-weight: 700;
-  }
-
   code {
     background: #f1f5f9;
     padding: 2px 5px;
@@ -277,10 +271,6 @@
     background: #1e293b;
     border-color: #334155;
     color: #f8fafc;
-  }
-
-  :global(.dark) .address-block a {
-    color: #818cf8;
   }
 
   :global(.dark) .back-btn {

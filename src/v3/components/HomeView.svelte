@@ -4,8 +4,9 @@
     type WorldChapterV3,
   } from '../lib/chapters';
   import { countDueFactsV3, getWeakSpotFactsV3 } from '../lib/storage';
+  import { getFactVisualStatus } from '../lib/sm2';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
-  import Heatmap from './Heatmap.svelte';
+  import ParentalGateModal from './ParentalGateModal.svelte';
 
   interface Props {
     gameMode: GameMode;
@@ -59,6 +60,27 @@
   );
 
   let showUserDropdown = $state(false);
+  let showParentalGate = $state(false);
+
+  let masteryStats = $derived.by(() => {
+    let crowns = 0;
+    let greenSteps = 0;
+    let wrong = 0;
+    let learning = 0;
+    for (const f of facts) {
+      const vis = getFactVisualStatus(f);
+      if (vis.hasCrown) crowns++;
+      if (vis.level === 'green_step1' || vis.level === 'green_step2' || vis.level === 'green_step3') {
+        greenSteps++;
+      } else if (vis.level === 'wrong_hard' || vis.level === 'wrong_soft') {
+        wrong++;
+      } else if (vis.level === 'learning') {
+        learning++;
+      }
+    }
+    const percent = Math.round((greenSteps / (facts.length || 100)) * 100);
+    return { crowns, greenSteps, wrong, learning, percent };
+  });
 </script>
 
 <div class="w-full max-w-lg mx-auto space-y-3.5 pb-8">
@@ -127,12 +149,12 @@
             type="button"
             onclick={() => {
               showUserDropdown = false;
-              onOpenUsers();
+              showParentalGate = true;
             }}
             class="w-full flex items-center gap-2 p-2 rounded-xl text-left text-xs font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border-none cursor-pointer"
           >
             <span>⚙️</span>
-            <span>Optionen &amp; Spieler verwalten</span>
+            <span>Optionen &amp; Spieler verwalten 🔒</span>
           </button>
         </div>
       {/if}
@@ -159,43 +181,44 @@
         {soundEnabled ? '🔊' : '🔇'}
       </button>
 
-      <!-- Einstellungen -->
+      <!-- Einstellungen (mit Eltern-Gate geschützt) -->
       <button
         type="button"
-        onclick={onOpenUsers}
-        class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 text-xs cursor-pointer"
-        title="Einstellungen"
+        onclick={() => (showParentalGate = true)}
+        class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs cursor-pointer flex items-center gap-0.5"
+        title="Elternbereich &amp; Optionen (gesichert)"
+        aria-label="Optionen öffnen"
       >
-        ⚙️
+        <span>⚙️</span>
+        <span class="text-[9px]">🔒</span>
       </button>
     </div>
   </header>
 
-  <!-- 2. PROMINENTER SPIELMODUS-UMSCHALTER (1 KLICK) -->
-  <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 dark:bg-slate-800 p-1.5 rounded-2xl shadow-inner">
+  <!-- 2. AKTIVER LERNBEREICH (KOMPAKT & KINDGERECHT) -->
+  <div class="flex items-center justify-between bg-white dark:bg-[#111827] px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-base shrink-0">
+        {gameMode === 'mult' ? '✖️' : '➕'}
+      </div>
+      <div>
+        <span class="font-black text-xs text-slate-900 dark:text-white block leading-tight">
+          {gameMode === 'mult' ? '1×1 Meister (× / :)' : 'Zahlen-Held (+ / −)'}
+        </span>
+        <span class="text-[10px] text-slate-400 font-medium">
+          {gameMode === 'mult' ? 'Kleines Einmaleins (Klasse 2–4)' : 'Zahlenraum bis 20 (Klasse 1 & 2)'}
+        </span>
+      </div>
+    </div>
+
     <button
       type="button"
-      onclick={() => onSwitchGameMode('plusminus')}
-      class="py-2.5 px-3 rounded-xl text-xs font-black transition border-none cursor-pointer flex items-center justify-center gap-1.5 {
-        gameMode === 'plusminus'
-          ? 'bg-white dark:bg-[#111827] text-indigo-600 dark:text-indigo-400 shadow-sm'
-          : 'bg-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }"
+      onclick={() => (showParentalGate = true)}
+      class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:underline bg-transparent border-none p-0 cursor-pointer flex items-center gap-1"
+      title="Lernbereich im Elternbereich umstellen"
     >
-      <span>➕</span>
-      <span>Zahlen-Held (+ / −)</span>
-    </button>
-    <button
-      type="button"
-      onclick={() => onSwitchGameMode('mult')}
-      class="py-2.5 px-3 rounded-xl text-xs font-black transition border-none cursor-pointer flex items-center justify-center gap-1.5 {
-        gameMode === 'mult'
-          ? 'bg-white dark:bg-[#111827] text-indigo-600 dark:text-indigo-400 shadow-sm'
-          : 'bg-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }"
-    >
-      <span>✖️</span>
-      <span>1×1 Meister (× / :)</span>
+      <span>Ändern</span>
+      <span class="text-[9px]">🔒</span>
     </button>
   </div>
 
@@ -370,22 +393,86 @@
     </div>
   </section>
 
-  <!-- 5. 10x10 WISSENSKARTE (HEATMAP) -->
-  <Heatmap
-    {gameMode}
-    {facts}
-    onPracticeFact={onPracticeFact}
-    onOpenFullscreen={onOpenMatrix}
-  />
+  <!-- 5. WISSENSKARTE: MOTIVIERENDE FORTSCHRITTS-KARTE STATT RIESEN-MATRIX -->
+  <section class="bg-white dark:bg-[#111827] rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3" aria-label="Wissenskarte Fortschritt">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🗺️</span>
+        <div>
+          <h3 class="text-xs font-black text-slate-900 dark:text-white m-0">
+            {gameMode === 'mult' ? '1×1 Wissenskarte' : 'Zahlen-Held Wissenskarte'}
+          </h3>
+          <span class="text-[10px] text-slate-400 font-medium">
+            Dein Weg zur Meisterschaft aller 100 Aufgaben
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onclick={onOpenMatrix}
+        class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/60 dark:border-indigo-800/40 px-2.5 py-1 rounded-xl cursor-pointer transition shadow-2xs"
+      >
+        Öffnen ›
+      </button>
+    </div>
+
+    <!-- Fortschrittsbalken -->
+    <div class="space-y-1">
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-extrabold text-slate-800 dark:text-slate-200">
+          {masteryStats.greenSteps} von 100 Fakten gemeistert
+        </span>
+        <span class="font-black text-indigo-600 dark:text-indigo-400">
+          {masteryStats.percent}%
+        </span>
+      </div>
+      <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60">
+        <div
+          class="bg-gradient-to-r from-emerald-500 via-emerald-400 to-indigo-500 h-full rounded-full transition-all duration-300 shadow-xs"
+          style="width: {masteryStats.percent}%"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Status-Pills -->
+    <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold">
+      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 p-1.5 rounded-xl text-amber-800 dark:text-amber-300">
+        <span class="text-xs block">👑 {masteryStats.crowns}</span>
+        <span class="text-[9px] uppercase tracking-wide">Kronen</span>
+      </div>
+
+      <div class="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 p-1.5 rounded-xl text-emerald-800 dark:text-emerald-300">
+        <span class="text-xs block">🟢 {masteryStats.greenSteps}</span>
+        <span class="text-[9px] uppercase tracking-wide">Gemeistert</span>
+      </div>
+
+      <div class="bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-800/40 p-1.5 rounded-xl text-rose-800 dark:text-rose-300">
+        <span class="text-xs block">🚨 {masteryStats.wrong}</span>
+        <span class="text-[9px] uppercase tracking-wide">Knacknüsse</span>
+      </div>
+    </div>
+
+    <!-- Aktions-Button zur Rechentafel -->
+    <button
+      type="button"
+      onclick={onOpenMatrix}
+      class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-extrabold py-2.5 px-3 rounded-2xl text-xs flex items-center justify-center gap-2 border border-slate-200/80 dark:border-slate-700 cursor-pointer transition shadow-2xs"
+    >
+      <span>🗺️</span>
+      <span>Ganze 100er-Tafel anzeigen &amp; Fakten prüfen</span>
+      <span>›</span>
+    </button>
+  </section>
 
   <!-- 6. FOOTER: OPTIONEN, IMPRESSUM & DATENSCHUTZ, RELOAD -->
   <footer class="pt-3 pb-4 flex items-center justify-between text-slate-400 dark:text-slate-500 text-[11px] border-t border-slate-100 dark:border-slate-800/80">
     <button
       type="button"
-      onclick={onOpenUsers}
+      onclick={() => (showParentalGate = true)}
       class="hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer text-xs font-semibold"
     >
-      <span>⚙️</span> <span>Optionen</span>
+      <span>⚙️</span> <span>Optionen 🔒</span>
     </button>
 
     <button
@@ -488,4 +575,15 @@
       </button>
     </div>
   </div>
+{/if}
+
+<!-- KINDERSICHERUNG (PARENTAL GATE MODAL) -->
+{#if showParentalGate}
+  <ParentalGateModal
+    onSuccess={() => {
+      showParentalGate = false;
+      onOpenUsers();
+    }}
+    onCancel={() => (showParentalGate = false)}
+  />
 {/if}

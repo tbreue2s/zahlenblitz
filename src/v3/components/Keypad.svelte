@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { hapticTap } from '../lib/haptics';
 
   interface Props {
     disabled?: boolean;
@@ -23,17 +24,35 @@
   const digitsRow2 = ['4', '5', '6'];
   const digitsRow3 = ['7', '8', '9'];
 
+  function handleDigitClick(d: string) {
+    if (disabled) return;
+    hapticTap();
+    onDigit(d);
+  }
+
+  function handleDeleteClick() {
+    if (disabled || !canDelete) return;
+    hapticTap();
+    onDelete();
+  }
+
+  function handleSubmitClick() {
+    if (disabled || !canSubmit) return;
+    hapticTap();
+    onSubmit();
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (disabled) return;
     if (event.key >= '0' && event.key <= '9') {
       event.preventDefault();
-      onDigit(event.key);
+      handleDigitClick(event.key);
     } else if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
-      if (canDelete) onDelete();
+      handleDeleteClick();
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (canSubmit) onSubmit();
+      handleSubmitClick();
     }
   }
 
@@ -52,7 +71,7 @@
         type="button"
         class="key-btn"
         {disabled}
-        onclick={() => onDigit(d)}
+        onclick={() => handleDigitClick(d)}
         aria-label="Ziffer {d}"
       >
         {d}
@@ -64,7 +83,7 @@
         type="button"
         class="key-btn"
         {disabled}
-        onclick={() => onDigit(d)}
+        onclick={() => handleDigitClick(d)}
         aria-label="Ziffer {d}"
       >
         {d}
@@ -76,7 +95,7 @@
         type="button"
         class="key-btn"
         {disabled}
-        onclick={() => onDigit(d)}
+        onclick={() => handleDigitClick(d)}
         aria-label="Ziffer {d}"
       >
         {d}
@@ -88,7 +107,7 @@
       type="button"
       class="key-btn action-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 disabled:opacity-40"
       disabled={disabled || !canDelete}
-      onclick={onDelete}
+      onclick={handleDeleteClick}
       aria-label="Löschen"
       title="Letzte Ziffer löschen"
     >
@@ -101,7 +120,7 @@
       type="button"
       class="key-btn"
       {disabled}
-      onclick={() => onDigit('0')}
+      onclick={() => handleDigitClick('0')}
       aria-label="Ziffer 0"
     >
       0
@@ -116,7 +135,7 @@
           : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-700 opacity-60'
       }"
       disabled={disabled || !canSubmit}
-      onclick={onSubmit}
+      onclick={handleSubmitClick}
       aria-label="Antwort prüfen"
       title="Antwort prüfen"
     >

@@ -7,11 +7,13 @@
     saveV3ProfilesAndActiveId,
   } from '../lib/storage';
   import { themeManager } from '../../lib/theme.svelte';
-  import type { UserProfileV3 } from '../lib/types';
+  import type { GameMode, UserProfileV3 } from '../lib/types';
 
   interface Props {
+    gameMode: GameMode;
     profiles: UserProfileV3[];
     activeProfileId: string;
+    onSwitchGameMode: (mode: GameMode) => void;
     onSelectProfile: (id: string) => void;
     onCreateProfile: (name: string, avatar: string) => void;
     onUpdateProfile: (id: string, name: string, avatar: string) => void;
@@ -21,8 +23,10 @@
   }
 
   let {
+    gameMode,
     profiles,
     activeProfileId,
+    onSwitchGameMode,
     onSelectProfile,
     onCreateProfile,
     onUpdateProfile,
@@ -196,6 +200,47 @@
       >
         ✕
       </button>
+    </div>
+
+    <!-- LERNBEREICH / SPIELMODUS (ELTERN-EINSTELLUNG) -->
+    <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5">
+          <span>🎯</span>
+          <span>Aktiver Lernbereich</span>
+        </span>
+        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+          Für aktives Kind festlegen
+        </span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onclick={() => onSwitchGameMode('plusminus')}
+          class="py-2.5 px-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition cursor-pointer {
+            gameMode === 'plusminus'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-400'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+          }"
+        >
+          <span class="text-xl">➕</span>
+          <span class="font-black text-xs">Zahlen-Held (+ / −)</span>
+          <span class="text-[9.5px] opacity-85 font-medium">Klasse 1 &amp; 2 (Zahlenraum 20)</span>
+        </button>
+        <button
+          type="button"
+          onclick={() => onSwitchGameMode('mult')}
+          class="py-2.5 px-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition cursor-pointer {
+            gameMode === 'mult'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-400'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+          }"
+        >
+          <span class="text-xl">✖️</span>
+          <span class="font-black text-xs">1×1 Meister (× / :)</span>
+          <span class="text-[9.5px] opacity-85 font-medium">Klasse 2, 3 &amp; 4 (Einmaleins)</span>
+        </button>
+      </div>
     </div>
 
     <!-- ERSCHEINUNGSBILD / THEME SWITCHER -->

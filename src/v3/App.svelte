@@ -277,8 +277,10 @@
   <!-- Benutzer- & Optionen-Modal -->
   {#if currentScreen === 'users'}
     <UserModal
+      {gameMode}
       {profiles}
       activeProfileId={activeProfile.id}
+      onSwitchGameMode={handleSwitchGameMode}
       onSelectProfile={handleSelectProfile}
       onCreateProfile={handleCreateProfile}
       onUpdateProfile={handleUpdateProfile}
