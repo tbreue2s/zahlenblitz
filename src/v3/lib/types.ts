@@ -64,6 +64,7 @@ export interface UserStatsV3 {
   fastSolved: number;
   soundEnabled: boolean;
   sessionSize: number;            // Standard: 10 (kindgerechte Rundenlänge)
+  blitzHighscore?: number;        // Bester 60s-Blitz-Score
 }
 
 export interface UserProfileV3 {

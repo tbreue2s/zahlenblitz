@@ -113,4 +113,55 @@ assert.ok(failResult.updatedFact.easeFactor < pmFacts[0].easeFactor, 'Ease Facto
 
 console.log('✓ Test 4 bestanden: SM-2 Engine bewertet fair, bestraft keine langsame Rechenzeit und vergibt Sterne.');
 
+// --- TEST 5: Didaktischer Welten-Schutz (Curriculum Progression Guard) ---
+import {
+  buildDailySessionQueueV3,
+  getWeakSpotFactsV3,
+  buildWeakSpotsSessionQueueV3,
+  buildBlitzChallengeQueueV3,
+} from '../src/v3/lib/storage';
+import { getAccessibleFactsPoolV3 } from '../src/v3/lib/chapters';
+
+// Frischer Fakten-Satz: Keine Welt freigespielt (nur Welt 1 aktiv)
+const freshMultFacts = generateMultFacts();
+const { accessibleFacts: freshAccessible, unlockedWorldCount: freshCount } =
+  getAccessibleFactsPoolV3(freshMultFacts, 'mult');
+assert.strictEqual(freshCount, 1, 'Bei ungespieltem Stand darf nur Welt 1 freigeschaltet sein');
+
+// Mehrfache Tages-Missionen an Tag 1 simulieren
+for (let round = 0; round < 5; round++) {
+  const queue = buildDailySessionQueueV3(freshMultFacts, 10);
+  assert.strictEqual(queue.length, 10, 'Queue muss 10 Aufgaben haben');
+  for (const item of queue) {
+    // Prüfe: Keine Königsaufgabe (7, 8, 9) darf vorkommen!
+    const isForbiddenKing =
+      [7, 8, 9].includes(item.fact.a) && [7, 8, 9].includes(item.fact.b);
+    assert.strictEqual(
+      isForbiddenKing,
+      false,
+      `Welten-Schutz verletzt: Fakt ${item.fact.a}x${item.fact.b} aus Welt 3 darf an Tag 1 nicht vorkommen!`
+    );
+  }
+}
+console.log('✓ Test 5 bestanden: Welten-Schutz verhindert Überforderung bei Vielspielern an Tag 1.');
+
+// --- TEST 6: Wackelkandidaten & 60s Blitz-Challenge ---
+const factsWithFlaws = generateMultFacts().map((f, i) => {
+  if (i === 0) return { ...f, totalAttempts: 2, lastQuality: 0 as const, repetitions: 0 };
+  if (i === 1) return { ...f, totalAttempts: 3, lastResponseMs: 9500, repetitions: 1 };
+  if (i === 2) return { ...f, totalAttempts: 4, correctAttempts: 1, easeFactor: 1.8, repetitions: 1 };
+  return f;
+});
+
+const weakSpots = getWeakSpotFactsV3(factsWithFlaws);
+assert.ok(weakSpots.length >= 3, 'Mindestens 3 Wackelkandidaten müssen erkannt werden');
+assert.strictEqual(weakSpots[0].id, factsWithFlaws[0].id, 'Akuter Fehler muss an Position 1 stehen');
+
+const weakQueue = buildWeakSpotsSessionQueueV3(factsWithFlaws, 10);
+assert.strictEqual(weakQueue.length, 10, 'Wackelkandidaten-Queue muss 10 Aufgaben liefern');
+
+const blitzQueue = buildBlitzChallengeQueueV3(factsWithFlaws, 60);
+assert.strictEqual(blitzQueue.length, 60, 'Blitz-Queue muss 60 Aufgaben für den 60s Sprint liefern');
+console.log('✓ Test 6 bestanden: Wackelkandidaten-Trainer & 60s Blitz-Challenge funktionieren fehlerfrei.');
+
 console.log('=== ALLE DIDAKTISCHEN TESTS ERFOLGREICH BESTANDEN! ===');

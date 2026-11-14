@@ -3,7 +3,7 @@
     getWorldChaptersV3,
     type WorldChapterV3,
   } from '../lib/chapters';
-  import { countDueFactsV3 } from '../lib/storage';
+  import { countDueFactsV3, getWeakSpotFactsV3 } from '../lib/storage';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
   import Heatmap from './Heatmap.svelte';
 
@@ -18,6 +18,8 @@
     onSelectProfile: (id: string) => void;
     onToggleSound: () => void;
     onStartDailySession: () => void;
+    onStartWeakSpots: () => void;
+    onStartBlitz: () => void;
     onStartChapterSession: (chapter: WorldChapterV3) => void;
     onPracticeFact: (fact: FactFamily) => void;
     onOpenMatrix: () => void;
@@ -36,6 +38,8 @@
     onSelectProfile,
     onToggleSound,
     onStartDailySession,
+    onStartWeakSpots,
+    onStartBlitz,
     onStartChapterSession,
     onPracticeFact,
     onOpenMatrix,
@@ -45,6 +49,7 @@
 
   let chapters = $derived(getWorldChaptersV3(facts, gameMode));
   let dueCount = $derived(countDueFactsV3(facts));
+  let weakSpotCount = $derived(getWeakSpotFactsV3(facts).length);
 
   let selectedChapterId = $state<string | null>(null);
   let selectedChapter = $derived(
@@ -229,6 +234,73 @@
       <span>Tages-Mission starten</span>
     </button>
   </section>
+
+  <!-- 3b. ZWEI TRAININGS-MODI: WACKELKANDIDATEN & 60s BLITZ-CHALLENGE -->
+  <div class="grid grid-cols-2 gap-2.5">
+    <!-- Wackelkandidaten-Trainer -->
+    <button
+      type="button"
+      onclick={onStartWeakSpots}
+      disabled={weakSpotCount === 0}
+      class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between {
+        weakSpotCount > 0
+          ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 cursor-pointer shadow-2xs'
+          : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 opacity-70 cursor-default'
+      }"
+    >
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-base">🧠</span>
+          <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full {
+            weakSpotCount > 0
+              ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
+              : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+          }">
+            {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest!'}
+          </span>
+        </div>
+        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
+          Wackelkandidaten
+        </div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+          {weakSpotCount > 0 ? 'Schwierige Aufgaben gezielt festigen' : 'Keine Wackelkandidaten!'}
+        </div>
+      </div>
+      <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+        {#if weakSpotCount > 0}
+          <span>Starten</span> <span>›</span>
+        {:else}
+          <span class="text-emerald-600 dark:text-emerald-400">Alles sicher ✓</span>
+        {/if}
+      </div>
+    </button>
+
+    <!-- 60s Blitz-Challenge -->
+    <button
+      type="button"
+      onclick={onStartBlitz}
+      class="card-press text-left p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800/60 transition cursor-pointer flex flex-col justify-between shadow-2xs"
+    >
+      <div>
+        <div class="flex items-center justify-between">
+          <span class="text-base">⚡</span>
+          <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full bg-indigo-200 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200">
+            60s Sprint
+          </span>
+        </div>
+        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
+          Blitz-Challenge
+        </div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+          Wie viele schaffst du in 1 Minute?
+        </div>
+      </div>
+      <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-2 flex items-center justify-between">
+        <span>Rekord: {stats.blitzHighscore ?? 0}</span>
+        <span>Starten ›</span>
+      </div>
+    </button>
+  </div>
 
   <!-- 4. RECHENWELTEN: 3 STRATEGIE-KAPITEL -->
   <section class="bg-white dark:bg-[#111827] rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs" aria-label="Rechenwelten">

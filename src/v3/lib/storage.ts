@@ -4,10 +4,11 @@ import {
   selectTaskVariant,
 } from './generator';
 import { checkHasV2Data, importProfilesFromV2 } from './migration';
-import type { QueuedTaskV3 } from './chapters';
+import { getAccessibleFactsPoolV3, type QueuedTaskV3 } from './chapters';
 import type {
   FactFamily,
   GameMode,
+  TaskVariant,
   UserProfileV3,
   UserStatsV3,
 } from './types';
@@ -214,6 +215,7 @@ export function smartShuffleV3(tasks: QueuedTaskV3[]): QueuedTaskV3[] {
 
 /**
  * Erstellt die Tages-Mission (Daily Session Queue):
+ * - Beachtet den didaktischen Welten-Schutz: Neue Fakten kommen NUR aus freigeschalteten Welten!
  * - Mischt fällige Wiederholungen (max. 60%) mit neuen Fakten (30%) und Festigung (10%).
  * - Weist jedem Faktum über selectTaskVariant() eine kindgerechte Darstellungsform zu.
  */
@@ -222,6 +224,11 @@ export function buildDailySessionQueueV3(
   sessionSize = 10,
   now = Date.now()
 ): QueuedTaskV3[] {
+  const mode = facts[0]?.mode ?? 'mult';
+  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode);
+  const accessibleIds = new Set(accessibleFacts.map((f) => f.id));
+
+  // 1. Fällige Wiederholungen aus allen bereits begonnenen Aufgaben
   const due = facts
     .filter((f) => f.totalAttempts > 0 && (f.dueDate <= now || f.repetitions === 0))
     .sort((a, b) => {
@@ -230,8 +237,9 @@ export function buildDailySessionQueueV3(
       return a.dueDate - b.dueDate;
     });
 
+  // 2. Neue ungelernte Fakten – STRENG GEFILTERT auf die aktuell freigeschalteten Welten!
   const unlearned = facts
-    .filter((f) => f.totalAttempts === 0)
+    .filter((f) => f.totalAttempts === 0 && accessibleIds.has(f.id))
     .sort((a, b) => {
       // Zerlegungen und Kernreihen zuerst
       const getPrio = (f: FactFamily) => {
@@ -250,8 +258,15 @@ export function buildDailySessionQueueV3(
       return getPrio(a) - getPrio(b);
     });
 
+  // 3. Zukünftige Festigungs-Fakten (nur aus freigeschalteten Welten)
   const upcoming = facts
-    .filter((f) => f.totalAttempts > 0 && f.dueDate > now && f.repetitions > 0)
+    .filter(
+      (f) =>
+        f.totalAttempts > 0 &&
+        f.dueDate > now &&
+        f.repetitions > 0 &&
+        accessibleIds.has(f.id)
+    )
     .sort((a, b) => a.dueDate - b.dueDate);
 
   const selectedFacts: FactFamily[] = [];
@@ -272,6 +287,15 @@ export function buildDailySessionQueueV3(
     selectedFacts.push(...upcoming.slice(0, sessionSize - selectedFacts.length));
   }
 
+  // Falls das Kind an einem Tag sehr viel spielt und alle freigeschalteten Fakten schon dran waren:
+  // Fülle NUR aus bereits bekannten Fakten des freigeschalteten Pools auf (Festigung/Tempo), NIEMALS aus gesperrten Welten!
+  if (selectedFacts.length < sessionSize) {
+    const fallbackPool = accessibleFacts.filter(
+      (f) => !selectedFacts.some((s) => s.id === f.id)
+    );
+    selectedFacts.push(...fallbackPool.slice(0, sessionSize - selectedFacts.length));
+  }
+
   // Jeder gewählten Faktenfamilie eine dynamische Variante zuweisen
   const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => ({
     fact,
@@ -279,6 +303,114 @@ export function buildDailySessionQueueV3(
   }));
 
   return smartShuffleV3(tasks);
+}
+
+/**
+ * Ermittelt alle Fakten, bei denen das Kind noch Unsicherheiten zeigt:
+ * 1. Kürzlicher Fehler (lastQuality === 0 oder repetitions === 0 nach Versuchen)
+ * 2. Geringe Verlässlichkeit (easeFactor < 2.2)
+ * 3. Lange Rechenzeit (> 8 Sekunden)
+ * 4. Mehrere Fehlversuche (Trefferquote < 75%)
+ */
+export function getWeakSpotFactsV3(facts: FactFamily[]): FactFamily[] {
+  return facts
+    .filter((f) => {
+      if (f.totalAttempts === 0) return false;
+      if (f.repetitions === 0 || f.lastQuality === 0) return true;
+      if (f.easeFactor < 2.2) return true;
+      if (typeof f.lastResponseMs === 'number' && f.lastResponseMs > 8000) return true;
+      if (f.totalAttempts >= 2 && f.correctAttempts / f.totalAttempts < 0.75) return true;
+      return false;
+    })
+    .sort((a, b) => {
+      const aWeight =
+        (a.lastQuality === 0 ? 100 : 0) +
+        (3.0 - a.easeFactor) * 20 +
+        ((a.lastResponseMs || 0) / 1000);
+      const bWeight =
+        (b.lastQuality === 0 ? 100 : 0) +
+        (3.0 - b.easeFactor) * 20 +
+        ((b.lastResponseMs || 0) / 1000);
+      return bWeight - aWeight;
+    });
+}
+
+/**
+ * Erstellt eine fokussierte Übungsrunde für die Wackelkandidaten (Schwachstellen-Trainer).
+ */
+export function buildWeakSpotsSessionQueueV3(
+  facts: FactFamily[],
+  sessionSize = 10
+): QueuedTaskV3[] {
+  const weakSpots = getWeakSpotFactsV3(facts);
+  if (weakSpots.length === 0) return [];
+
+  const selectedFacts: FactFamily[] = [...weakSpots.slice(0, sessionSize)];
+
+  // Falls weniger als sessionSize Wackelkandidaten vorhanden sind, mit begonnenen Fakten auffüllen
+  if (selectedFacts.length < sessionSize) {
+    const fallbackPool = facts.filter(
+      (f) => f.totalAttempts > 0 && !selectedFacts.some((s) => s.id === f.id)
+    );
+    selectedFacts.push(...fallbackPool.slice(0, sessionSize - selectedFacts.length));
+  }
+
+  // Falls immer noch Plätze frei sind (z.B. am Anfang mit wenigen Aufgaben):
+  // Wiederhole die Wackelkandidaten gezielt, bis die Runde voll ist
+  while (selectedFacts.length < sessionSize && weakSpots.length > 0) {
+    const candidate = weakSpots[selectedFacts.length % weakSpots.length];
+    selectedFacts.push(candidate);
+  }
+
+  const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => ({
+    fact,
+    variant:
+      fact.lastQuality === 0
+        ? fact.mode === 'mult'
+          ? 'mult'
+          : 'add'
+        : selectTaskVariant(fact),
+  }));
+
+  return smartShuffleV3(tasks);
+}
+
+/**
+ * Erstellt eine schnelle Aufgaben-Queue für die 60-Sekunden-Blitz-Challenge:
+ * - Zieht nur bereits freigeschaltete und schon mindestens 1x gesehene Fakten (oder Welt 1 Grundaufgaben)
+ * - Bevorzugt schnelle Grund- und Umkehraufgaben für maximalen Spielspaß ohne Lückenverwirrung
+ */
+export function buildBlitzChallengeQueueV3(
+  facts: FactFamily[],
+  count = 60
+): QueuedTaskV3[] {
+  const mode = facts[0]?.mode ?? 'mult';
+  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode);
+
+  let pool = accessibleFacts.filter((f) => f.repetitions >= 1);
+  if (pool.length < 10) {
+    pool = accessibleFacts;
+  }
+
+  const result: QueuedTaskV3[] = [];
+  while (result.length < count) {
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    for (const fact of shuffled) {
+      const variant: TaskVariant =
+        mode === 'mult'
+          ? Math.random() < 0.65 || fact.repetitions < 2
+            ? 'mult'
+            : 'div'
+          : Math.random() < 0.65 || fact.repetitions < 2
+            ? 'add'
+            : 'sub';
+
+      result.push({ fact, variant });
+      if (result.length >= count) break;
+    }
+  }
+
+  return result;
 }
 
 export function countDueFactsV3(facts: FactFamily[], now = Date.now()): number {

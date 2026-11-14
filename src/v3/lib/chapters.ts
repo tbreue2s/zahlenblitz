@@ -137,6 +137,46 @@ export function getWorldChaptersV3(
   ];
 }
 
+/**
+ * Bestimmt den didaktisch freigeschalteten Fakten-Pool:
+ * - Welt 1 ist immer aktiv (Kernaufgaben bzw. Zehnerbasis).
+ * - Welt 2 schaltet sich für neue ungelernte Fakten erst frei, wenn Welt 1 mind. Stern 1 hat (80% gerechnet).
+ * - Welt 3 schaltet sich erst frei, wenn Welt 2 mind. Stern 1 hat.
+ * Dadurch wird ein motiviertes Kind beim Durchspielen NIEMALS mit ungelernter Mathematik überfahren!
+ */
+export function getAccessibleFactsPoolV3(
+  facts: FactFamily[],
+  mode: GameMode
+): {
+  accessibleFacts: FactFamily[];
+  unlockedWorldCount: number;
+} {
+  const chapters = getWorldChaptersV3(facts, mode);
+  const rawList: FactFamily[] = [...chapters[0].facts];
+  let unlockedWorldCount = 1;
+
+  if (chapters[0].stars >= 1) {
+    rawList.push(...chapters[1].facts);
+    unlockedWorldCount = 2;
+  }
+
+  if (chapters[0].stars >= 1 && chapters[1].stars >= 1) {
+    rawList.push(...chapters[2].facts);
+    unlockedWorldCount = 3;
+  }
+
+  const seenIds = new Set<string>();
+  const accessibleFacts: FactFamily[] = [];
+  for (const f of rawList) {
+    if (!seenIds.has(f.id)) {
+      seenIds.add(f.id);
+      accessibleFacts.push(f);
+    }
+  }
+
+  return { accessibleFacts, unlockedWorldCount };
+}
+
 function buildMultChapterV3(
   id: string,
   title: string,

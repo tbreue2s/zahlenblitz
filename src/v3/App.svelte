@@ -9,6 +9,7 @@
   import { selectTaskVariant } from './lib/generator';
   import {
     buildDailySessionQueueV3,
+    buildWeakSpotsSessionQueueV3,
     createNewProfileV3,
     loadV3ProfilesAndActiveId,
     registerDailyPracticeV3,
@@ -18,10 +19,11 @@
   import HomeView from './components/HomeView.svelte';
   import MatrixView from './components/MatrixView.svelte';
   import PracticeView from './components/PracticeView.svelte';
+  import BlitzChallengeView from './components/BlitzChallengeView.svelte';
   import UserModal from './components/UserModal.svelte';
   import LegalView from '../components/LegalView.svelte';
 
-  type Screen = 'home' | 'practice' | 'matrix' | 'users' | 'legal';
+  type Screen = 'home' | 'practice' | 'matrix' | 'users' | 'legal' | 'blitz';
 
   let currentScreen = $state<Screen>('home');
   let loaded = loadV3ProfilesAndActiveId();
@@ -74,6 +76,59 @@
   function handleStartDailySession() {
     activeSessionQueue = buildDailySessionQueueV3(facts, stats.sessionSize);
     currentScreen = 'practice';
+  }
+
+  function handleStartWeakSpots() {
+    activeSessionQueue = buildWeakSpotsSessionQueueV3(facts, stats.sessionSize);
+    currentScreen = 'practice';
+  }
+
+  function handleStartBlitz() {
+    currentScreen = 'blitz';
+  }
+
+  function handleRecordHighscore(newScore: number) {
+    updateActiveProfile((prof) => {
+      const mode = prof.activeGameMode ?? 'mult';
+      if (mode === 'mult') {
+        return {
+          ...prof,
+          multStats: {
+            ...prof.multStats,
+            blitzHighscore: Math.max(prof.multStats.blitzHighscore ?? 0, newScore),
+          },
+        };
+      }
+      return {
+        ...prof,
+        plusMinusStats: {
+          ...prof.plusMinusStats,
+          blitzHighscore: Math.max(prof.plusMinusStats.blitzHighscore ?? 0, newScore),
+        },
+      };
+    });
+  }
+
+  function handleAddStars(additionalStars: number) {
+    updateActiveProfile((prof) => {
+      const mode = prof.activeGameMode ?? 'mult';
+      if (mode === 'mult') {
+        return {
+          ...prof,
+          multStats: {
+            ...prof.multStats,
+            stars: prof.multStats.stars + additionalStars,
+          },
+        };
+      }
+      return {
+        ...prof,
+        plusMinusStats: {
+          ...prof.plusMinusStats,
+          stars: prof.plusMinusStats.stars + additionalStars,
+        },
+      };
+    });
   }
 
   function handleStartChapterSession(chapter: WorldChapterV3) {
@@ -178,6 +233,8 @@
       onSelectProfile={handleSelectProfile}
       onToggleSound={handleToggleSound}
       onStartDailySession={handleStartDailySession}
+      onStartWeakSpots={handleStartWeakSpots}
+      onStartBlitz={handleStartBlitz}
       onStartChapterSession={handleStartChapterSession}
       onPracticeFact={handlePracticeFact}
       onOpenMatrix={() => (currentScreen = 'matrix')}
@@ -193,6 +250,15 @@
       onRestartSession={() => {
         handleStartDailySession();
       }}
+    />
+  {:else if currentScreen === 'blitz'}
+    <BlitzChallengeView
+      {facts}
+      currentHighscore={stats.blitzHighscore ?? 0}
+      soundEnabled={stats.soundEnabled}
+      onRecordHighscore={handleRecordHighscore}
+      onAddStars={handleAddStars}
+      onBack={() => (currentScreen = 'home')}
     />
   {:else if currentScreen === 'matrix'}
     <MatrixView
