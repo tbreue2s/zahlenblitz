@@ -13,6 +13,7 @@ export const DEFAULT_EASE_FACTOR = 2.5;
 
 export function classifyStrategyPM(a: number, b: number, c: number): DidacticStrategyPM {
   if (c === 10) return 'bonds_10';
+  if (a === 10 || b === 10) return 'ten_plus';
   if (a === b) return 'doubles';
   if (Math.abs(a - b) === 1) return 'near_doubles';
   if (c < 10) return 'up_to_10';
@@ -94,9 +95,9 @@ export function generateMultFacts(): FactFamily[] {
  * - repetitions === 1: 50% Grundaufgabe, 50% Umkehraufgabe (Geteilt bzw. Minus).
  * - repetitions >= 2: Rotation durch alle Varianten, ungelöste Transferformen bevorzugt.
  */
-export function selectTaskVariant(fact: FactFamily): TaskVariant {
+export function selectTaskVariant(fact: FactFamily, allowInverse = true): TaskVariant {
   if (fact.mode === 'mult') {
-    if (fact.repetitions === 0) {
+    if (fact.repetitions === 0 || !allowInverse) {
       return 'mult';
     }
     if (fact.repetitions === 1) {
@@ -116,7 +117,7 @@ export function selectTaskVariant(fact: FactFamily): TaskVariant {
   }
 
   // plusminus
-  if (fact.repetitions === 0) {
+  if (fact.repetitions === 0 || !allowInverse) {
     return 'add';
   }
   if (fact.repetitions === 1) {
@@ -192,6 +193,10 @@ export function getMultiplicationStrategyHint(a: number, b: number, c: number): 
 function getAdditionHint(a: number, b: number, c: number): string {
   if (c === 10) {
     return `❤️ Verliebte Zahlen: ${a} und ${b} ergeben zusammen immer 10!`;
+  }
+  if (a === 10 || b === 10) {
+    const other = a === 10 ? b : a;
+    return `🔟 Zehnerbündel: 10 + ${other} = 1 Zehner und ${other} Einer (${c})!`;
   }
   if (a === b) {
     return `⚡ Verdoppeln: ${a} + ${a} = ${c}`;
@@ -308,9 +313,11 @@ export function formatEquationPartsV3(
         typeBadge:
           c === 10
             ? '❤️ Verliebte Zahlen'
-            : c <= 10
-              ? 'Plus bis 10'
-              : 'Zehnerübergang',
+            : a === 10 || b === 10
+              ? '🔟 Zehnerbündel'
+              : c <= 10
+                ? 'Plus bis 10'
+                : 'Zehnerübergang',
         fullEquationWithSolution: `${a} + ${b} = ${c}`,
         hintText: getAdditionHint(a, b, c),
         strategyHint: getAdditionHint(a, b, c),
@@ -325,9 +332,11 @@ export function formatEquationPartsV3(
         typeBadge:
           c === 10
             ? '❤️ Verliebte Zahlen · Minus'
-            : c > 10 && a < 10
-              ? 'Minus über die 10'
-              : 'Minus-Aufgabe',
+            : a === 10 || b === 10
+              ? '🔟 Zehnerbündel · Minus'
+              : c > 10 && a < 10 && b < 10
+                ? 'Minus über die 10'
+                : 'Minus-Aufgabe',
         fullEquationWithSolution: `${c} − ${b} = ${a}`,
         hintText:
           c > 10 && a < 10

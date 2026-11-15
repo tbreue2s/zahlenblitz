@@ -77,7 +77,12 @@
   }
 
   function handleStartDailySession() {
-    activeSessionQueue = buildDailySessionQueueV3(facts, stats.sessionSize);
+    activeSessionQueue = buildDailySessionQueueV3(
+      facts,
+      stats.sessionSize,
+      Date.now(),
+      activeProfile.freeWorldChoice ?? false
+    );
     currentScreen = 'practice';
   }
 
@@ -261,6 +266,13 @@
     persistAll(next, activeProfileId);
   }
 
+  function handleToggleFreeWorldChoice(profileId: string, freeChoice: boolean) {
+    const next = profiles.map((p) =>
+      p.id === profileId ? { ...p, freeWorldChoice: freeChoice } : p
+    );
+    persistAll(next, activeProfileId);
+  }
+
   function handleRestoreProfile(restored: UserProfileV3) {
     const isSingleDefault =
       profiles.length === 1 &&
@@ -334,6 +346,7 @@
       {profiles}
       activeProfileId={activeProfile.id}
       onSwitchProfileGameMode={handleSwitchProfileGameMode}
+      onToggleFreeWorldChoice={handleToggleFreeWorldChoice}
       onSelectProfile={handleSelectProfile}
       onCreateProfile={handleCreateProfile}
       onUpdateProfile={handleUpdateProfile}

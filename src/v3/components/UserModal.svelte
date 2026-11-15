@@ -20,6 +20,7 @@
     onDeleteProfile: (id: string) => void;
     onRestoreProfile: (prof: UserProfileV3) => void;
     onImportSuccess: (imported: UserProfileV3[]) => void;
+    onToggleFreeWorldChoice?: (profileId: string, freeChoice: boolean) => void;
     onClose: () => void;
   }
 
@@ -33,6 +34,7 @@
     onDeleteProfile,
     onRestoreProfile,
     onImportSuccess,
+    onToggleFreeWorldChoice,
     onClose,
   }: Props = $props();
 
@@ -426,6 +428,44 @@
                 }"
               >
                 ✖️ 1x1 Meister
+              </button>
+            </div>
+          </div>
+
+          <!-- Lernpfad-Einstellung: Geführt vs. Freie Weltenwahl -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+            <div>
+              <span class="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 block">
+                Lernpfad:
+              </span>
+              <span class="text-[9px] text-slate-400 block">
+                {prof.freeWorldChoice ? 'Alle Welten frei wählbar' : 'Didaktisch geführt (Stufe für Stufe)'}
+              </span>
+            </div>
+            <div class="inline-flex rounded-lg p-0.5 bg-slate-200/70 dark:bg-slate-700/60 border border-slate-300/40 dark:border-slate-600/40">
+              <button
+                type="button"
+                onclick={() => onToggleFreeWorldChoice?.(prof.id, false)}
+                class="px-2 py-1 rounded-md text-[10px] font-extrabold transition cursor-pointer border-none {
+                  !prof.freeWorldChoice
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }"
+                title="Geführter Pfad: Neue Welten schalten sich frei, wenn Vorstufen sitzen"
+              >
+                🔒 Geführt
+              </button>
+              <button
+                type="button"
+                onclick={() => onToggleFreeWorldChoice?.(prof.id, true)}
+                class="px-2 py-1 rounded-md text-[10px] font-extrabold transition cursor-pointer border-none {
+                  prof.freeWorldChoice
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }"
+                title="Freie Weltenwahl: Alle Welten sofort üben (z. B. für Hausaufgaben)"
+              >
+                🔓 Frei
               </button>
             </div>
           </div>

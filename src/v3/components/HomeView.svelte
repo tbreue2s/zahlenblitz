@@ -227,6 +227,7 @@
   <Heatmap
     {gameMode}
     {facts}
+    freeWorldChoice={activeProfile.freeWorldChoice ?? false}
     onPracticeFact={onPracticeFact}
   />
 

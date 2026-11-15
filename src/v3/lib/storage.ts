@@ -4,7 +4,7 @@ import {
   selectTaskVariant,
 } from './generator';
 import { checkHasV2Data, importProfilesFromV2 } from './migration';
-import { getAccessibleFactsPoolV3, type QueuedTaskV3 } from './chapters';
+import { getAccessibleFactsPoolV3, getFactWorld, type QueuedTaskV3 } from './chapters';
 import type {
   FactFamily,
   GameMode,
@@ -247,10 +247,11 @@ export function smartShuffleV3(tasks: QueuedTaskV3[]): QueuedTaskV3[] {
 export function buildDailySessionQueueV3(
   facts: FactFamily[],
   sessionSize = 10,
-  now = Date.now()
+  now = Date.now(),
+  freeWorldChoice = false
 ): QueuedTaskV3[] {
   const mode = facts[0]?.mode ?? 'mult';
-  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode);
+  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode, freeWorldChoice);
   const accessibleIds = new Set(accessibleFacts.map((f) => f.id));
 
   // 1. Fällige Wiederholungen aus allen bereits begonnenen Aufgaben
@@ -321,11 +322,24 @@ export function buildDailySessionQueueV3(
     selectedFacts.push(...fallbackPool.slice(0, sessionSize - selectedFacts.length));
   }
 
-  // Jeder gewählten Faktenfamilie eine dynamische Variante zuweisen
-  const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => ({
-    fact,
-    variant: selectTaskVariant(fact),
-  }));
+  // Bestimme für jede Rechenwelt, ob alle Basis-Aufgaben bereits mindestens 1x gelernt wurden
+  const worldBaseLearnedMap = new Map<number, boolean>();
+  for (const w of [1, 2, 3]) {
+    const wFacts = facts.filter((f) => getFactWorld(f) === w);
+    const allLearned = wFacts.length > 0 && wFacts.every((f) => f.repetitions >= 1);
+    worldBaseLearnedMap.set(w, allLearned);
+  }
+
+  // Jeder gewählten Faktenfamilie eine dynamische Variante zuweisen:
+  // Geteilt- und Minusaufgaben werden erst eingesteuert, wenn alle Basisaufgaben der jeweiligen Welt mindestens 1x gelernt wurden!
+  const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => {
+    const world = getFactWorld(fact);
+    const allowInverse = worldBaseLearnedMap.get(world) ?? false;
+    return {
+      fact,
+      variant: selectTaskVariant(fact, allowInverse),
+    };
+  });
 
   return smartShuffleV3(tasks);
 }

@@ -13,7 +13,7 @@
   } from '../lib/haptics';
   import type { QueuedTaskV3 } from '../lib/chapters';
   import { formatEquationPartsV3 } from '../lib/generator';
-  import { applySM2ToFact, FAST_THRESHOLD_MS } from '../lib/sm2';
+  import { applySM2ToFact, FAST_THRESHOLD_MS, isDigitReversal } from '../lib/sm2';
   import type { FactFamily } from '../lib/types';
   import Keypad from './Keypad.svelte';
   import TwentyFrame from './TwentyFrame.svelte';
@@ -52,6 +52,7 @@
   let lastQuality = $state<0 | 2 | 3 | 4>(0);
   let lastUserAnswer = $state<number | null>(null);
   let lastResponseMs = $state(0);
+  let lastIsReversal = $state(false);
   let sessionFinished = $state(false);
 
   let sessionStars = $state(0);
@@ -180,11 +181,15 @@
           advanceNext();
         }, 1200);
       } else {
+        const isReversal = isDigitReversal(userAnswer, equationParts.solution);
+        lastIsReversal = isReversal;
         sessionMistakes++;
         feedbackState = 'wrong';
         lastUserAnswer = userAnswer;
-        feedbackTitle = 'Schau dir die Lösung genau an:';
-        feedbackSubtitle = 'Merke dir den Rechenweg für gleich.';
+        feedbackTitle = isReversal ? 'Fast! Zahlendreher 🔄' : 'Schau dir die Lösung genau an:';
+        feedbackSubtitle = isReversal
+          ? 'Erst Zehner, dann Einer! Merke dir die richtige Reihenfolge.'
+          : 'Merke dir den Rechenweg für gleich.';
         playErrorSound(soundEnabled);
         hapticError();
 
@@ -237,6 +242,8 @@
       } else {
         // Fehler im Erstversuch:
         // HIER GREIFT DER DIDAKTISCHE SCHUTZ: KEIN AUTO-SKIP!
+        const isReversal = isDigitReversal(userAnswer, equationParts.solution);
+        lastIsReversal = isReversal;
         sessionMistakes++;
         feedbackState = 'wrong';
         lastUserAnswer = userAnswer;
@@ -249,11 +256,13 @@
           currentTask.fact,
           currentTask.variant,
           false,
-          responseMs
+          responseMs,
+          Date.now(),
+          isReversal
         );
         factToSave = result.updatedFact;
-        feedbackTitle = 'Fast geschafft! Schau dir die Lösung an:';
-        feedbackSubtitle = 'Die Aufgabe kommt am Ende der Runde noch einmal.';
+        feedbackTitle = result.feedbackTitle;
+        feedbackSubtitle = result.feedbackSubtitle;
 
         // Karte zur Festigung ans Ende der Runde anhängen
         queue = [...queue, { ...currentTask, fact: factToSave }];
@@ -268,6 +277,7 @@
     feedbackState = 'idle';
     inputDigits = '';
     lastUserAnswer = null;
+    lastIsReversal = false;
 
     if (currentIndex + 1 < queue.length) {
       currentIndex++;
@@ -335,6 +345,13 @@
             <div class="text-xs font-bold text-rose-500 dark:text-rose-400">
               Deine Antwort war: <span class="line-through">{lastUserAnswer ?? '?'}</span> ✕
             </div>
+
+            <!-- Didaktischer Zahlendreher-Hinweis (Inversionsproblem) -->
+            {#if lastIsReversal}
+              <div class="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/80 text-amber-900 dark:text-amber-200 text-xs font-bold text-center animate-fade-in">
+                🔄 <strong>Fast! Zahlendreher:</strong> Du hast <span class="line-through font-mono">{lastUserAnswer}</span> getippt – richtig herum ist es <span class="font-black text-emerald-600 dark:text-emerald-400 font-mono text-sm">{equationParts.solution}</span>! Erst Zehner, dann Einer.
+              </div>
+            {/if}
 
             <!-- Die richtige, vollständige Gleichung -->
             <div class="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 select-none">

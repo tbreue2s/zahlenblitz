@@ -6,12 +6,14 @@
   interface Props {
     gameMode: GameMode;
     facts: FactFamily[];
+    freeWorldChoice?: boolean;
     onPracticeFact?: (fact: FactFamily) => void;
   }
 
   let {
     gameMode,
     facts,
+    freeWorldChoice = false,
     onPracticeFact,
   }: Props = $props();
 
@@ -23,7 +25,7 @@
   let lockedPromptFact = $state<FactFamily | null>(null);
   let showLegendModal = $state(false);
 
-  let accessiblePool = $derived(getAccessibleFactsPoolV3(facts, gameMode));
+  let accessiblePool = $derived(getAccessibleFactsPoolV3(facts, gameMode, freeWorldChoice));
   let unlockedWorldCount = $derived(accessiblePool.unlockedWorldCount);
 
   function getFactForCell(a: number, b: number): FactFamily | undefined {

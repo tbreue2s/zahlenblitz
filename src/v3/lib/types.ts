@@ -23,6 +23,7 @@ export type DidacticStrategyPM =
   | 'bonds_10'      // Verliebte Zahlen / Partner zur 10 (c === 10)
   | 'doubles'       // Verdopplungsaufgaben (a === b)
   | 'near_doubles'  // Nachbaraufgaben / Fast-Verdoppeln (|a - b| === 1)
+  | 'ten_plus'      // Zehner-Bündel (10 + x / x + 10)
   | 'over_10';      // Zehnerübergang (c > 10, Zehnerstopp)
 
 export type DidacticStrategyMult =
@@ -89,6 +90,7 @@ export interface UserProfileV3 {
   name: string;
   avatar: string;
   activeGameMode: GameMode;
+  freeWorldChoice?: boolean;
   createdAt: number;
   multStats: UserStatsV3;
   multFacts: FactFamily[];        // Exakt 100 Fakten

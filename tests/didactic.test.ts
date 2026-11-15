@@ -8,7 +8,7 @@ import {
   selectTaskVariant,
 } from '../src/v3/lib/generator';
 import { getWorldChaptersV3 } from '../src/v3/lib/chapters';
-import { applySM2ToFact, evaluateResponseQuality, getFactVisualStatus } from '../src/v3/lib/sm2';
+import { applySM2ToFact, evaluateResponseQuality, getFactVisualStatus, isDigitReversal } from '../src/v3/lib/sm2';
 import type { FactFamily } from '../src/v3/lib/types';
 
 console.log('=== START DIDACTIC TESTS V3 ===');
@@ -52,16 +52,17 @@ for (const [a, b, c] of missingSample) {
   assert.ok(ch1Facts.some(f => f.a === a && f.b === b), `Fakt ${a}+${b}=${c} muss in Welt 1 enthalten sein`);
 }
 
-// Welt 2: Summe > 10 und (a === b oder |a - b| === 1)
+// Welt 2: Verdoppeln, Nachbarn und Zehnerbündel (10 + x / x + 10) bis 20
 // Verdopplungen > 10: 6+6, 7+7, 8+8, 9+9, 10+10 (5 Fakten)
 // Nachbarn > 10: 5+6, 6+5, 6+7, 7+6, 7+8, 8+7, 8+9, 9+8, 9+10, 10+9 (10 Fakten)
-// In Summe 15 Fakten
-assert.strictEqual(ch2Facts.length, 15, 'Welt 2 muss exakt 15 Fakten enthalten');
+// Zehnerbündel 10+x / x+10 (ohne Dopplung zu 10+10 und 9+10/10+9): 16 Fakten
+// In Summe 31 Fakten
+assert.strictEqual(ch2Facts.length, 31, 'Welt 2 muss exakt 31 Fakten enthalten');
 
-// Welt 3: Summe > 10 und echte Übergänge (40 Fakten)
-assert.strictEqual(ch3Facts.length, 40, 'Welt 3 muss exakt 40 Fakten enthalten');
+// Welt 3: Echter Zehnerübergang ohne 10er-Bündel (24 Fakten)
+assert.strictEqual(ch3Facts.length, 24, 'Welt 3 muss exakt 24 Fakten enthalten');
 
-// Gesamt-Check: 45 + 15 + 40 = 100!
+// Gesamt-Check: 45 + 31 + 24 = 100!
 assert.strictEqual(ch1Facts.length + ch2Facts.length + ch3Facts.length, 100, 'Alle 100 Fakten müssen abgedeckt sein');
 console.log('✓ Test 2 bestanden: Alle 100 Fakten lückenlos in den 3 Rechenwelten.');
 
@@ -109,13 +110,27 @@ for (let i = 0; i < 500; i++) {
 assert.ok(sawMultGap, 'Bei repetitions >= 2 müssen auch 1x1-Lückenaufgaben vorkommen');
 console.log('✓ Test 3 bestanden: Varianten-Auswahl schützt vor Überforderung und alle Lückenaufgaben folgen strikt Zahl [Op] ? = Zahl.');
 
-// --- TEST 4: SM-2 Engine & Kindgerechte Zeitfenster ---
-assert.strictEqual(evaluateResponseQuality(true, 4000), 4, '4s ist q=4 (Blitzschnell)');
-assert.strictEqual(evaluateResponseQuality(true, 5999), 4, '< 6s ist q=4 (Blitzschnell)');
-assert.strictEqual(evaluateResponseQuality(true, 6001), 3, '6.001s ist q=3 (Sicher gelöst)');
-assert.strictEqual(evaluateResponseQuality(true, 11999), 3, '< 12s ist q=3 (Sicher gelöst)');
-assert.strictEqual(evaluateResponseQuality(true, 13500), 2, '> 12s ist q=2 (Ausgerechnet)');
+// --- TEST 4: SM-2 Engine & Differenzierte Zeitfenster (1x1: 4s vs. PlusMinus: 5s) ---
+// 1x1 Meister (mult)
+assert.strictEqual(evaluateResponseQuality(true, 3999, 'mult'), 4, '1x1: < 4s ist q=4 (Blitzschnell)');
+assert.strictEqual(evaluateResponseQuality(true, 4000, 'mult'), 4, '1x1: 4.0s ist q=4 (Blitzschnell)');
+assert.strictEqual(evaluateResponseQuality(true, 4001, 'mult'), 3, '1x1: 4.001s ist q=3 (Sicher gelöst)');
+assert.strictEqual(evaluateResponseQuality(true, 11999, 'mult'), 3, '1x1: < 12s ist q=3 (Sicher gelöst)');
+assert.strictEqual(evaluateResponseQuality(true, 13500, 'mult'), 2, '1x1: > 12s ist q=2 (Ausgerechnet)');
+
+// Zahlen-Held (plusminus: 5s Schwellenwert)
+assert.strictEqual(evaluateResponseQuality(true, 4999, 'plusminus'), 4, 'PM: < 5s ist q=4 (Blitzschnell)');
+assert.strictEqual(evaluateResponseQuality(true, 5000, 'plusminus'), 4, 'PM: 5.0s ist q=4 (Blitzschnell)');
+assert.strictEqual(evaluateResponseQuality(true, 5001, 'plusminus'), 3, 'PM: 5.001s ist q=3 (Sicher gelöst)');
+assert.strictEqual(evaluateResponseQuality(true, 11999, 'plusminus'), 3, 'PM: < 12s ist q=3 (Sicher gelöst)');
+assert.strictEqual(evaluateResponseQuality(true, 13500, 'plusminus'), 2, 'PM: > 12s ist q=2 (Ausgerechnet)');
 assert.strictEqual(evaluateResponseQuality(false, 3000), 0, 'Falsch ist immer q=0');
+
+// Inversionsfehler / Zahlendreher (31 statt 13 oder 65 statt 56)
+assert.strictEqual(isDigitReversal(31, 13), true, '31 vs 13 ist ein Zahlendreher');
+assert.strictEqual(isDigitReversal(65, 56), true, '65 vs 56 ist ein Zahlendreher');
+assert.strictEqual(isDigitReversal(12, 12), false, 'Gleiche Zahl ist kein Zahlendreher');
+assert.strictEqual(isDigitReversal(14, 15), false, '14 vs 15 ist kein Zahlendreher');
 
 // Prüfe: Keine Ease-Bestrafung bei q = 2
 const slowResult = applySM2ToFact(pmFacts[0], 'add', true, 14000);
@@ -123,14 +138,21 @@ assert.strictEqual(slowResult.quality, 2);
 assert.strictEqual(slowResult.updatedFact.easeFactor, pmFacts[0].easeFactor, 'Ease Factor darf bei q=2 NICHT sinken!');
 assert.strictEqual(slowResult.starsEarned, 1, 'Langsame richtige Antwort gibt trotzdem 1 Stern');
 
-// Prüfe: Fehler verringert Ease und setzt repetitions zurück
+// Prüfe: Regulärer Fehler verringert Ease um 0.20
 const failResult = applySM2ToFact(pmFacts[0], 'add', false, 3000);
 assert.strictEqual(failResult.quality, 0);
 assert.strictEqual(failResult.updatedFact.repetitions, 0);
 assert.strictEqual(failResult.updatedFact.interval, 0);
-assert.ok(failResult.updatedFact.easeFactor < pmFacts[0].easeFactor, 'Ease Factor muss bei Fehler sinken');
+assert.strictEqual(failResult.updatedFact.easeFactor, Number((pmFacts[0].easeFactor - 0.2).toFixed(2)), 'Regulärer Fehler zieht 0.20 Ease ab');
 
-console.log('✓ Test 4 bestanden: SM-2 Engine bewertet fair, bestraft keine langsame Rechenzeit und vergibt Sterne.');
+// Prüfe: Zahlendreher verringert Ease nur minimal um 0.05
+const revResult = applySM2ToFact(pmFacts[0], 'add', false, 3000, Date.now(), true);
+assert.strictEqual(revResult.quality, 0);
+assert.strictEqual(revResult.updatedFact.repetitions, 0);
+assert.strictEqual(revResult.updatedFact.easeFactor, Number((pmFacts[0].easeFactor - 0.05).toFixed(2)), 'Zahlendreher zieht nur 0.05 Ease ab');
+assert.ok(revResult.feedbackTitle.includes('Zahlendreher'), 'Feedback-Titel muss Zahlendreher erwähnen');
+
+console.log('✓ Test 4 bestanden: SM-2 Engine bewertet fair, differenziert Zeitfenster nach Klassenstufe und fängt Zahlendreher ab.');
 
 // --- TEST 5: Didaktischer Welten-Schutz (Curriculum Progression Guard) ---
 import {
@@ -160,9 +182,18 @@ for (let round = 0; round < 5; round++) {
       false,
       `Welten-Schutz verletzt: Fakt ${item.fact.a}x${item.fact.b} aus Welt 3 darf an Tag 1 nicht vorkommen!`
     );
+    // Prüfe: Geteilt-Aufgaben dürfen erst kommen, wenn alle Malaufgaben der Welt sitzen
+    assert.strictEqual(item.variant, 'mult', 'Bei unvollständiger Welt 1 darf nur die Grundaufgabe mult kommen');
   }
 }
-console.log('✓ Test 5 bestanden: Welten-Schutz verhindert Überforderung bei Vielspielern an Tag 1.');
+
+// Prüfe: Freie Weltenwahl schaltet für Eltern alle 3 Welten und alle 100 Fakten frei
+const { accessibleFacts: freePool, unlockedWorldCount: freeCount } =
+  getAccessibleFactsPoolV3(freshMultFacts, 'mult', true);
+assert.strictEqual(freeCount, 3, 'Bei freier Weltenwahl müssen alle 3 Welten freigeschaltet sein');
+assert.strictEqual(freePool.length, 100, 'Bei freier Weltenwahl müssen alle 100 Fakten zugänglich sein');
+
+console.log('✓ Test 5 bestanden: Welten-Schutz und Geteilt-Schutz verhindern Überforderung, freie Weltenwahl funktioniert.');
 
 // --- TEST 6: Wackelkandidaten & 60s Blitz-Challenge ---
 const factsWithFlaws = generateMultFacts().map((f, i) => {

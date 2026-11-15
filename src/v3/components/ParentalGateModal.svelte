@@ -18,53 +18,21 @@
 
   interface GateChallenge {
     question: string;
-    word: string;
+    task: string;
     solution: number;
   }
 
-  function toGermanNumberWord(n: number): string {
-    const units = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
-    const teens: Record<number, string> = {
-      10: 'zehn', 11: 'elf', 12: 'zwölf', 13: 'dreizehn', 14: 'vierzehn',
-      15: 'fünfzehn', 16: 'sechzehn', 17: 'siebzehn', 18: 'achtzehn', 19: 'neunzehn'
-    };
-    const tens = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
-    const hundreds = [
-      '', 'Einhundert', 'Zweihundert', 'Dreihundert', 'Vierhundert',
-      'Fünfhundert', 'Sechshundert', 'Siebenhundert', 'Achthundert', 'Neunhundert'
-    ];
-
-    const h = Math.floor(n / 100);
-    const remainder = n % 100;
-
-    let word = hundreds[h] || '';
-
-    if (remainder === 0) {
-      return word;
-    }
-    if (remainder < 10) {
-      const unitWord = remainder === 1 ? 'eins' : units[remainder];
-      return word + unitWord;
-    }
-    if (remainder >= 10 && remainder < 20) {
-      return word + teens[remainder];
-    }
-    const u = remainder % 10;
-    const t = Math.floor(remainder / 10);
-    if (u === 0) {
-      return word + tens[t];
-    }
-    const unitPrefix = u === 1 ? 'ein' : units[u];
-    return word + unitPrefix + 'und' + tens[t];
-  }
-
   function generateChallenge(): GateChallenge {
-    // Ausschliesslich dreistellige Zahlwörter (100 bis 999)
-    const n = 100 + Math.floor(Math.random() * 900);
+    // Zweistellige Multiplikationsaufgabe für Erwachsene (z. B. 17 × 4 = 68)
+    // Grundschüler bis Klasse 3 beherrschen nur das 1x1 bis 10x10.
+    const tensList = [14, 16, 17, 18, 19, 23, 24, 26, 27];
+    const multList = [3, 4, 6, 7];
+    const a = tensList[Math.floor(Math.random() * tensList.length)];
+    const b = multList[Math.floor(Math.random() * multList.length)];
     return {
-      question: 'Tippe die Ziffern für das Zahlwort:',
-      word: toGermanNumberWord(n),
-      solution: n,
+      question: 'Nur für Erwachsene: Löse die Rechenaufgabe:',
+      task: `${a} × ${b} =`,
+      solution: a * b,
     };
   }
 
@@ -170,8 +138,8 @@
       <span class="text-xs text-indigo-700 dark:text-indigo-300 font-bold block">
         {challenge.question}
       </span>
-      <div class="text-base sm:text-lg font-black text-indigo-950 dark:text-indigo-100 py-1 tracking-wide">
-        „{challenge.word}“
+      <div class="text-xl sm:text-2xl font-black text-indigo-950 dark:text-indigo-100 py-1 tracking-wide">
+        {challenge.task} ?
       </div>
     </div>
 

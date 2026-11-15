@@ -1,4 +1,4 @@
-import { getFactMastery } from './sm2';
+import { getFactMastery, getFactVisualStatus } from './sm2';
 import type { FactFamily, GameMode, TaskVariant } from './types';
 
 export interface StarProgressV3 {
@@ -58,11 +58,16 @@ export function getFactWorld(fact: FactFamily): 1 | 2 | 3 {
   } else {
     // Welt 1: Zerlegungen bis 10 (45 Fakten)
     if (fact.c <= 10) return 1;
-    // Welt 2: Verdoppeln und Fast-Verdoppeln bis 20 (15 Fakten)
-    if (fact.a === fact.b || Math.abs(fact.a - fact.b) === 1) {
+    // Welt 2: Verdoppeln, Fast-Verdoppeln & Zehner-Bündel (10 + x / x + 10) bis 20 (31 Fakten)
+    if (
+      fact.a === fact.b ||
+      Math.abs(fact.a - fact.b) === 1 ||
+      fact.a === 10 ||
+      fact.b === 10
+    ) {
       return 2;
     }
-    // Welt 3: Echter Zehnerübergang (40 Fakten)
+    // Welt 3: Echter Zehnerübergang (24 Fakten)
     return 3;
   }
 }
@@ -120,19 +125,19 @@ export function getWorldChaptersV3(
     ),
     buildPlusMinusChapterV3(
       'pm_2',
-      'Tal der Doppelgänger',
+      'Tal der Doppelgänger & Zehnerbündel',
       '⚡',
-      'Verdoppeln & Nachbarn bis 20 (15 Fakten)',
+      'Verdoppeln, Nachbarn & 10er-Bündel (31 Fakten)',
       facts.filter((f) => getFactWorld(f) === 2),
-      'Verdoppeln bis 20 (z. B. 6 + 6, 7 + 7)',
-      'Halbieren / Minus (z. B. 14 − 7, 16 − 8)',
-      'Nachbarn & Lücken (z. B. 6 + 7, ? + 7 = 14)'
+      'Verdoppeln & 10+x (z. B. 6 + 6, 10 + 4)',
+      'Halbieren & Minus (z. B. 14 − 7, 14 − 4)',
+      'Nachbarn & Lücken (z. B. 6 + 7, 10 + ? = 14)'
     ),
     buildPlusMinusChapterV3(
       'pm_3',
       'Zehner-Gipfel',
       '🚀',
-      'Zehnerübergang bis 20 (40 Fakten)',
+      'Echter Zehnerübergang bis 20 (24 Fakten)',
       facts.filter((f) => getFactWorld(f) === 3),
       'Plus mit Zehnerstopp (z. B. 8 + 5 = 13)',
       'Minus unter die 10 (z. B. 13 − 5 = 8)',
@@ -144,17 +149,25 @@ export function getWorldChaptersV3(
 /**
  * Bestimmt den didaktisch freigeschalteten Fakten-Pool:
  * - Welt 1 ist immer aktiv (Kernaufgaben bzw. Zehnerbasis).
- * - Welt 2 schaltet sich für neue ungelernte Fakten erst frei, wenn Welt 1 mind. Stern 1 hat (80% gerechnet).
+ * - Welt 2 schaltet sich für neue ungelernte Fakten erst frei, wenn Welt 1 mind. Stern 1 hat (80% Hellgrün).
  * - Welt 3 schaltet sich erst frei, wenn Welt 2 mind. Stern 1 hat.
- * Dadurch wird ein motiviertes Kind beim Durchspielen NIEMALS mit ungelernter Mathematik überfahren!
+ * - Bei aktivierter freier Weltenwahl (Eltern-Option) sind sofort alle 3 Welten zugänglich.
  */
 export function getAccessibleFactsPoolV3(
   facts: FactFamily[],
-  mode: GameMode
+  mode: GameMode,
+  freeWorldChoice = false
 ): {
   accessibleFacts: FactFamily[];
   unlockedWorldCount: number;
 } {
+  if (freeWorldChoice) {
+    return {
+      accessibleFacts: [...facts],
+      unlockedWorldCount: 3,
+    };
+  }
+
   const chapters = getWorldChaptersV3(facts, mode);
   const rawList: FactFamily[] = [...chapters[0].facts];
   let unlockedWorldCount = 1;
@@ -240,10 +253,11 @@ function computeChapterStatsV3(
 ): WorldChapterV3 {
   const totalFacts = chapterFacts.length || 1;
 
-  // Stufe 1: Fakt wurde mindestens 1x richtig gelöst (repetitions >= 1)
-  const s1Learned = chapterFacts.filter(
-    (f) => f.repetitions >= 1 && (f.lastQuality ?? 0) >= 2
-  ).length;
+  // Stufe 1: Fakt hat mindestens Hellgrün (green_step1, green_step2, green_step3 oder Krone) erreicht
+  const s1Learned = chapterFacts.filter((f) => {
+    const status = getFactVisualStatus(f);
+    return status.level.startsWith('green_') || status.hasCrown;
+  }).length;
   const s1Percent = Math.min(100, Math.round((s1Learned / totalFacts) * 100));
   const s1Achieved = s1Percent >= 80 && s1Learned >= 1;
 
