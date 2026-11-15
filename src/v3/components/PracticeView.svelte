@@ -83,8 +83,36 @@
     clearTimers();
   });
 
+  let isSpeakingHint = $state(false);
+
   function clearTimers() {
     if (autoNextTimeout) clearTimeout(autoNextTimeout);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      isSpeakingHint = false;
+    }
+  }
+
+  function speakStrategyHint() {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !equationParts) return;
+    if (isSpeakingHint) {
+      window.speechSynthesis.cancel();
+      isSpeakingHint = false;
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const cleanHint = equationParts.strategyHint.replace(/[💡⚡⭐🚀]/g, '').trim();
+    const utterance = new SpeechSynthesisUtterance(cleanHint);
+    utterance.lang = 'de-DE';
+    utterance.rate = 0.9;
+    utterance.onend = () => {
+      isSpeakingHint = false;
+    };
+    utterance.onerror = () => {
+      isSpeakingHint = false;
+    };
+    isSpeakingHint = true;
+    window.speechSynthesis.speak(utterance);
   }
 
   function startTaskTimer() {
@@ -316,12 +344,24 @@
             <!-- Didaktische Mengendarstellung im Zwanzigerfeld für Zahlen-Held -->
             {#if currentTask.fact.mode === 'plusminus'}
               <TwentyFrame fact={currentTask.fact} variant={currentTask.variant} />
+            {:else}
+              <!-- Didaktischer Denkhinweis für 1x1 Meister mit Vorlese-Option -->
+              <div class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 flex items-start justify-between gap-2 text-left">
+                <div class="text-xs text-indigo-950 dark:text-indigo-200 font-semibold leading-relaxed">
+                  {equationParts.strategyHint}
+                </div>
+                <button
+                  type="button"
+                  onclick={speakStrategyHint}
+                  class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition shrink-0"
+                  title="Strategie-Tipp vorlesen lassen 🔊"
+                  aria-label="Tipp vorlesen"
+                >
+                  <span>{isSpeakingHint ? '⏹️' : '🔊'}</span>
+                  <span class="text-[10px] font-black">{isSpeakingHint ? 'Stopp' : 'Vorlesen'}</span>
+                </button>
+              </div>
             {/if}
-
-            <!-- Didaktischer Denkhinweis -->
-            <div class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 text-xs text-indigo-950 dark:text-indigo-200 font-semibold leading-relaxed">
-              {equationParts.strategyHint}
-            </div>
 
             <!-- Interaktiver Bestätigungs-Button -->
             <button

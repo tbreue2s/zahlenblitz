@@ -10,8 +10,10 @@
   import {
     buildDailySessionQueueV3,
     buildWeakSpotsSessionQueueV3,
+    checkNeedsOnboardingV3,
     createNewProfileV3,
     loadV3ProfilesAndActiveId,
+    ONBOARDING_COMPLETED_KEY,
     registerDailyPracticeV3,
     saveV3ProfilesAndActiveId,
   } from './lib/storage';
@@ -20,6 +22,7 @@
   import PracticeView from './components/PracticeView.svelte';
   import BlitzChallengeView from './components/BlitzChallengeView.svelte';
   import UserModal from './components/UserModal.svelte';
+  import OnboardingModal from './components/OnboardingModal.svelte';
   import LegalView from '../components/LegalView.svelte';
 
   type Screen = 'home' | 'practice' | 'users' | 'legal' | 'blitz';
@@ -28,6 +31,7 @@
   let loaded = loadV3ProfilesAndActiveId();
   let profiles = $state<UserProfileV3[]>(loaded.profiles);
   let activeProfileId = $state<string>(loaded.activeProfileId);
+  let showOnboarding = $state(checkNeedsOnboardingV3(loaded.profiles));
 
   let activeSessionQueue = $state<QueuedTaskV3[]>([]);
 
@@ -214,9 +218,22 @@
     saveV3ProfilesAndActiveId(profiles, id);
   }
 
-  function handleCreateProfile(name: string, avatar: string) {
-    const fresh = createNewProfileV3(name, avatar);
+  function handleCreateProfile(name: string, avatar: string, mode: GameMode = 'plusminus') {
+    const fresh = createNewProfileV3(name, avatar, mode);
     persistAll([...profiles, fresh], fresh.id);
+  }
+
+  function handleCompleteOnboarding(name: string, avatar: string, mode: GameMode) {
+    showOnboarding = false;
+    try {
+      window.localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    } catch {}
+    updateActiveProfile((prof) => ({
+      ...prof,
+      name,
+      avatar,
+      activeGameMode: mode,
+    }));
   }
 
   function handleUpdateProfile(id: string, name: string, avatar: string) {
@@ -324,6 +341,17 @@
       onRestoreProfile={handleRestoreProfile}
       onImportSuccess={handleImportSuccess}
       onClose={() => (currentScreen = 'home')}
+    />
+  {/if}
+
+  <!-- Willkommens-Onboarding bei Erst-Start / ungespieltem Profil -->
+  {#if showOnboarding}
+    <OnboardingModal
+      initialName={activeProfile.name}
+      initialAvatar={activeProfile.avatar}
+      initialMode={activeProfile.activeGameMode ?? 'plusminus'}
+      soundEnabled={stats.soundEnabled}
+      onComplete={handleCompleteOnboarding}
     />
   {/if}
 </main>

@@ -51,16 +51,36 @@ export function getLocalDateString(date: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+export const ONBOARDING_COMPLETED_KEY = 'zahlenblitz_v3_onboarding_completed';
+
+export function checkNeedsOnboardingV3(profiles: UserProfileV3[]): boolean {
+  if (typeof window === 'undefined') return false;
+  const isDone = window.localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+  if (isDone === 'true') return false;
+
+  const hasHistory = profiles.some(
+    (p) => (p.multStats?.totalSolved ?? 0) > 0 || (p.plusMinusStats?.totalSolved ?? 0) > 0
+  );
+  if (hasHistory) {
+    try {
+      window.localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    } catch {}
+    return false;
+  }
+  return true;
+}
+
 export function createNewProfileV3(
   name = 'Spieler 1',
-  avatar = '🐧'
+  avatar = '🦊',
+  activeGameMode: GameMode = 'plusminus'
 ): UserProfileV3 {
   const id = `user_v3_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   return {
     id,
     name: name.trim() || 'Spieler 1',
     avatar,
-    activeGameMode: 'mult',
+    activeGameMode,
     createdAt: Date.now(),
     multStats: getDefaultStatsV3(),
     multFacts: generateMultFacts(),

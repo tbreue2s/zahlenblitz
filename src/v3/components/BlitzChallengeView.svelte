@@ -48,6 +48,7 @@
   let isNewHighscore = $state(false);
   let starsEarned = $state(0);
   let flashEffect = $state<'green' | 'red' | null>(null);
+  let isResetting = $state(false);
 
   let currentTask = $derived(queue[currentIndex]);
   let equationParts = $derived(
@@ -82,27 +83,38 @@
   }
 
   function handleDigit(digit: string) {
-    if (isGameOver || !equationParts) return;
+    if (isGameOver || !equationParts || isResetting) return;
     if (inputDigits.length >= 3) return;
 
     playKeyTap(soundEnabled);
     const nextInput = inputDigits + digit;
     inputDigits = nextInput;
 
+    const val = parseInt(nextInput, 10);
+    const expected = equationParts.solution;
+
     // Instant-Check: Sobald das richtige Ergebnis getippt wird, SOFORT weiterspringen!
-    if (parseInt(nextInput, 10) === equationParts.solution) {
+    if (val === expected) {
       handleSuccess();
+      return;
+    }
+
+    // Auto-Clear bei Fehler im Blitz-Modus:
+    // Sobald die Länge der gesuchten Zahl erreicht ist und das Ergebnis falsch ist:
+    const expectedLen = String(expected).length;
+    if (nextInput.length >= expectedLen) {
+      handleMistake();
     }
   }
 
   function handleDelete() {
-    if (isGameOver) return;
+    if (isGameOver || isResetting) return;
     playKeyTap(soundEnabled);
     inputDigits = inputDigits.slice(0, -1);
   }
 
   function handleSubmit() {
-    if (isGameOver || !equationParts) return;
+    if (isGameOver || !equationParts || isResetting) return;
     if (!inputDigits) return;
 
     const val = parseInt(inputDigits, 10);
@@ -137,10 +149,12 @@
     playErrorSound(soundEnabled);
     hapticError();
     flashEffect = 'red';
+    isResetting = true;
     setTimeout(() => {
       flashEffect = null;
-    }, 250);
-    inputDigits = '';
+      inputDigits = '';
+      isResetting = false;
+    }, 280);
   }
 
   function restartGame() {
@@ -251,7 +265,7 @@
 
     <!-- Ziffernblock -->
     <Keypad
-      disabled={isGameOver}
+      disabled={isGameOver || isResetting}
       canSubmit={inputDigits.length > 0}
       canDelete={inputDigits.length > 0}
       onDigit={handleDigit}

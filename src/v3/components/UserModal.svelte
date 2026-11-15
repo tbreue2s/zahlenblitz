@@ -15,7 +15,7 @@
     activeProfileId: string;
     onSwitchProfileGameMode: (profileId: string, mode: GameMode) => void;
     onSelectProfile: (id: string) => void;
-    onCreateProfile: (name: string, avatar: string) => void;
+    onCreateProfile: (name: string, avatar: string, mode?: GameMode) => void;
     onUpdateProfile: (id: string, name: string, avatar: string) => void;
     onDeleteProfile: (id: string) => void;
     onRestoreProfile: (prof: UserProfileV3) => void;
@@ -41,6 +41,7 @@
 
   let newName = $state('');
   let selectedAvatar = $state(AVAILABLE_AVATARS[0]);
+  let newPlayerMode = $state<GameMode>('plusminus');
 
   let editingProfileId = $state<string | null>(null);
   let editNameInput = $state('');
@@ -61,7 +62,7 @@
 
   function handleCreate() {
     if (!newName.trim()) return;
-    onCreateProfile(newName.trim(), selectedAvatar);
+    onCreateProfile(newName.trim(), selectedAvatar, newPlayerMode);
     newName = '';
   }
 
@@ -473,7 +474,7 @@
     {/if}
 
     <!-- 3. NEUEN SPIELER ANLEGEN -->
-    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-2">
+    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-2.5">
       <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 block">Neuen Spieler anlegen</span>
       <div class="flex gap-2">
         <input
@@ -489,6 +490,32 @@
           class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-extrabold border-none cursor-pointer"
         >
           Anlegen
+        </button>
+      </div>
+
+      <!-- Modus-Vorauswahl für neuen Spieler -->
+      <div class="flex gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-700/60 rounded-xl text-[11px] font-bold">
+        <button
+          type="button"
+          onclick={() => (newPlayerMode = 'plusminus')}
+          class="flex-1 py-1.5 px-2 rounded-lg text-center transition cursor-pointer border-none {
+            newPlayerMode === 'plusminus'
+              ? 'bg-indigo-600 text-white shadow-2xs'
+              : 'bg-transparent text-slate-600 dark:text-slate-300'
+          }"
+        >
+          ➕ Zahlen-Held (1. Kl.)
+        </button>
+        <button
+          type="button"
+          onclick={() => (newPlayerMode = 'mult')}
+          class="flex-1 py-1.5 px-2 rounded-lg text-center transition cursor-pointer border-none {
+            newPlayerMode === 'mult'
+              ? 'bg-indigo-600 text-white shadow-2xs'
+              : 'bg-transparent text-slate-600 dark:text-slate-300'
+          }"
+        >
+          ✖️ 1x1 Meister (2./3. Kl.)
         </button>
       </div>
     </div>

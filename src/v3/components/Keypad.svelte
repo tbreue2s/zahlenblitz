@@ -131,7 +131,7 @@
       type="button"
       class="key-btn action-btn {
         canSubmit
-          ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700 shadow-md'
+          ? 'submit-ready bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700 ring-2 ring-emerald-400 dark:ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900'
           : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-700 opacity-60'
       }"
       disabled={disabled || !canSubmit}
@@ -182,5 +182,19 @@
 
   .key-btn:disabled {
     cursor: not-allowed;
+  }
+
+  @keyframes submit-glow {
+    0%, 100% {
+      box-shadow: 0 3px 0 #047857, 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+      box-shadow: 0 3px 0 #047857, 0 0 20px rgba(16, 185, 129, 0.85);
+      transform: scale(1.02);
+    }
+  }
+
+  .submit-ready {
+    animation: submit-glow 1.2s ease-in-out infinite;
   }
 </style>
