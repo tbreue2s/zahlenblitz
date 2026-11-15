@@ -187,7 +187,7 @@
   aria-modal="true"
   aria-label="Optionen und Benutzerverwaltung"
 >
-  <div class="w-full max-w-md bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-5">
+  <div class="w-full max-w-md bg-white dark:bg-[#141b2d] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-5">
     <!-- Header -->
     <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
       <div>

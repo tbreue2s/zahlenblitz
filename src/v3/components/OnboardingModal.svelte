@@ -56,7 +56,7 @@
   aria-modal="true"
   aria-label="Willkommen bei ZahlenBlitz"
 >
-  <div class="bg-white dark:bg-[#111827] w-full max-w-md rounded-3xl p-5 sm:p-6 border-2 border-indigo-500/30 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+  <div class="bg-white dark:bg-[#141b2d] w-full max-w-md rounded-3xl p-5 sm:p-6 border-2 border-indigo-500/30 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
     <!-- Header -->
     <div class="text-center space-y-1">
       <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-xs font-black">

@@ -64,7 +64,7 @@
   let activeB = $derived(hoveredCell?.b ?? selectedFact?.b ?? null);
 </script>
 
-<section class="bg-white dark:bg-[#111827] rounded-3xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2.5" aria-label="10x10 Rechentafel">
+<section class="bg-white dark:bg-[#141b2d] rounded-3xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-700/60 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.05)] dark:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] space-y-2.5" aria-label="10x10 Rechentafel">
   <!-- Welten-Auswahl & Legende (alles kompakt auf einer Zeile, ohne horizontales Scrollen) -->
   <div class="flex items-center justify-between gap-1.5 flex-wrap">
     <div class="flex items-center gap-1.5 text-xs">
@@ -160,7 +160,7 @@
       <span>Spalte (2. Zahl) →</span>
     </div>
 
-    <div class="grid grid-cols-11 gap-0.5 sm:gap-1 min-w-[280px] max-w-sm mx-auto p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-900 rounded-2xl select-none">
+    <div class="grid grid-cols-11 gap-0.5 sm:gap-1 min-w-[280px] max-w-sm mx-auto p-1.5 sm:p-2 bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl select-none">
       
       <!-- Obere linke Ecke (Operator) -->
       <div class="aspect-square rounded-md bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-black shadow-sm ring-1 ring-indigo-400">
@@ -318,7 +318,7 @@
     aria-modal="true"
     aria-label="Aufgabe gesperrt"
   >
-    <div class="w-full max-w-sm bg-white dark:bg-[#111827] border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-5 shadow-2xl space-y-3.5 animate-scale-up text-center">
+    <div class="w-full max-w-sm bg-white dark:bg-[#141b2d] border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-5 shadow-2xl space-y-3.5 animate-scale-up text-center">
       <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-2xl flex items-center justify-center mx-auto shadow-2xs">
         🔒
       </div>
@@ -356,7 +356,7 @@
     aria-modal="true"
     aria-label="Farb-Legende"
   >
-    <div class="w-full max-w-md bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
+    <div class="w-full max-w-md bg-white dark:bg-[#141b2d] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 class="text-base font-extrabold text-slate-900 dark:text-white m-0">

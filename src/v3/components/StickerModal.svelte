@@ -97,7 +97,7 @@
   aria-modal="true"
   aria-label="Sticker-Album und Belohnungen"
 >
-  <div class="w-full max-w-lg bg-white dark:bg-[#111827] border-2 border-amber-300/80 dark:border-amber-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl max-h-[92dvh] flex flex-col space-y-3.5 animate-scale-up overflow-hidden">
+  <div class="w-full max-w-lg bg-white dark:bg-[#141b2d] border-2 border-amber-300/80 dark:border-amber-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl max-h-[92dvh] flex flex-col space-y-3.5 animate-scale-up overflow-hidden">
     
     <!-- Header: Titel & Schließen -->
     <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">

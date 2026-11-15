@@ -219,7 +219,7 @@
 
   {#if !isGameOver && currentTask && equationParts}
     <!-- AUFGABEN-KARTE -->
-    <div class="bg-white dark:bg-[#111827] border-2 rounded-3xl p-6 sm:p-7 shadow-xl text-center space-y-4 transition-colors {
+    <div class="bg-white dark:bg-[#141b2d] border-2 rounded-3xl p-6 sm:p-7 shadow-xl text-center space-y-4 transition-colors {
       flashEffect === 'green'
         ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/30'
         : flashEffect === 'red'
@@ -274,7 +274,7 @@
     />
   {:else if isGameOver}
     <!-- END-BILDSCHIRM / HIGHSCORE -->
-    <div class="bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5 animate-fade-in">
+    <div class="bg-white dark:bg-[#141b2d] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5 animate-fade-in">
       <div class="text-5xl animate-bounce">
         {isNewHighscore ? '🏆' : score >= 15 ? '⚡' : '🎉'}
       </div>

@@ -308,7 +308,7 @@
     <div class="landscape:grid landscape:grid-cols-2 landscape:gap-4 landscape:items-center">
       <!-- Große Aufgabenkarte -->
       <div
-        class="bg-white dark:bg-[#111827] rounded-3xl p-5 sm:p-6 border-2 shadow-sm text-center relative transition-all duration-200 {
+        class="bg-white dark:bg-[#141b2d] rounded-3xl p-5 sm:p-6 border-2 shadow-sm text-center relative transition-all duration-200 {
           feedbackState === 'correct' || feedbackState === 'retry_correct'
             ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20'
             : feedbackState === 'wrong'
@@ -442,7 +442,7 @@
     </div>
   {:else if sessionFinished}
     <!-- RUNDEN-ABSCHLUSS -->
-    <div class="bg-white dark:bg-[#111827] rounded-3xl p-6 border-2 border-slate-200 dark:border-slate-800 text-center shadow-lg space-y-4 animate-slide-up">
+    <div class="bg-white dark:bg-[#141b2d] rounded-3xl p-6 border-2 border-slate-200 dark:border-slate-800 text-center shadow-lg space-y-4 animate-slide-up">
       <div class="text-5xl">🏆</div>
       <h2 class="text-xl font-black text-slate-900 dark:text-white m-0">
         Runde geschafft!

@@ -72,7 +72,7 @@
 
 <div class="w-full max-w-lg mx-auto space-y-3.5 pb-8">
   <!-- 1. KOPFZEILE MIT PROFIL, STREAK, STERNE & EINSTELLUNGEN -->
-  <header class="flex items-center justify-between bg-white dark:bg-[#111827] rounded-2xl p-3 border border-slate-200/80 dark:border-slate-800 shadow-xs relative">
+  <header class="flex items-center justify-between bg-white dark:bg-[#141b2d] rounded-3xl p-3 border border-slate-200/80 dark:border-slate-700/60 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.05)] dark:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] relative">
     <!-- Profil-Button -->
     <div class="relative">
       <button
@@ -82,7 +82,7 @@
         aria-haspopup="true"
         aria-expanded={showUserDropdown}
       >
-        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-xl shadow-2xs">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-100 dark:border-indigo-700/60 flex items-center justify-center text-xl shadow-xs">
           {activeProfile.avatar}
         </div>
         <div>
@@ -99,7 +99,7 @@
       </button>
 
       {#if showUserDropdown}
-        <div class="absolute left-0 top-full mt-2 w-60 bg-white dark:bg-[#111827] border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-slide-up">
+        <div class="absolute left-0 top-full mt-2 w-60 bg-white dark:bg-[#141b2d] border-2 border-slate-200 dark:border-slate-700 rounded-3xl shadow-xl z-50 p-1.5 space-y-1 animate-slide-up">
           <div class="px-2.5 py-1 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
             Spieler wechseln
           </div>
@@ -147,13 +147,13 @@
       {/if}
     </div>
 
-    <!-- Stats & Quick Actions -->
+    <!-- Stats & Quick Actions: Harmonized Squircle-Pills -->
     <div class="flex items-center gap-1.5 text-xs font-bold">
       <!-- Sterne (Klick öffnet Sticker-Album & Belohnungen) -->
       <button
         type="button"
         onclick={() => (showStickerModal = true)}
-        class="card-press flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 px-2.5 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 shadow-2xs cursor-pointer transition"
+        class="h-9 px-3 rounded-xl flex items-center gap-1.5 font-black text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 border border-amber-200/90 dark:border-amber-800/50 shadow-2xs tactile-btn cursor-pointer transition"
         title="{stats.stars} gesammelte Sterne · Tippe für dein Sticker-Album ✨"
         aria-label="Sticker-Album öffnen, {stats.stars} Sterne gesammelt"
       >
@@ -166,7 +166,7 @@
       <button
         type="button"
         onclick={onToggleSound}
-        class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs border border-transparent cursor-pointer"
+        class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 tactile-btn cursor-pointer text-xs transition"
         title={soundEnabled ? 'Ton stumm' : 'Ton an'}
       >
         {soundEnabled ? '🔊' : '🔇'}
@@ -176,38 +176,38 @@
       <button
         type="button"
         onclick={() => (showParentalGate = true)}
-        class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs cursor-pointer flex items-center gap-0.5"
+        class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 tactile-btn cursor-pointer text-xs transition"
         title="Elternbereich &amp; Optionen (gesichert)"
         aria-label="Optionen öffnen"
       >
         <span>⚙️</span>
-        <span class="text-[9px]">🔒</span>
+        <span class="text-[8px] -ml-0.5">🔒</span>
       </button>
     </div>
   </header>
 
 
   <!-- 3. HERO: TAGES-MISSION -->
-  <section class="bg-gradient-to-br from-indigo-950 via-[#0f172a] to-[#0f172a] rounded-3xl p-4 text-white border border-indigo-500/20 shadow-sm relative overflow-hidden" aria-label="Tages-Mission">
+  <section class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-[#1e1b4b] dark:via-[#111827] dark:to-[#0f172a] rounded-3xl p-4 sm:p-5 text-white border border-indigo-500/30 shadow-lg shadow-indigo-500/15 dark:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.6)] relative overflow-hidden" aria-label="Tages-Mission">
     <div class="flex items-center justify-between text-xs mb-1.5">
-      <span class="text-[10px] uppercase tracking-wider font-extrabold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-400/20">
+      <span class="text-[10px] uppercase tracking-wider font-extrabold text-white dark:text-indigo-300 bg-white/20 dark:bg-indigo-500/20 px-2.5 py-0.5 rounded-full border border-white/30 dark:border-indigo-400/20 backdrop-blur-sm">
         Tages-Mission
       </span>
-      <span class="text-[11px] text-slate-300 font-medium flex items-center gap-1">
+      <span class="text-[11px] text-indigo-100 dark:text-slate-300 font-medium flex items-center gap-1">
         {#if dueCount > 0}
-          <span class="text-amber-400">●</span> {dueCount} Wiederholungen fällig
+          <span class="text-amber-300 dark:text-amber-400">●</span> {dueCount} Wiederholungen fällig
         {:else}
-          <span class="text-emerald-400">✓</span> Alles aufgefrischt!
+          <span class="text-emerald-300 dark:text-emerald-400">✓</span> Alles aufgefrischt!
         {/if}
       </span>
     </div>
 
-    <h2 class="text-base font-extrabold text-white mt-1">
+    <h2 class="text-base sm:text-lg font-black tracking-tight text-white mt-1">
       {dueCount >= stats.sessionSize
         ? `${stats.sessionSize} Fakten: Auffrischen & Neues`
         : `${stats.sessionSize} gemischte Trainings-Fakten`}
     </h2>
-    <p class="text-xs text-slate-300 mt-0.5">
+    <p class="text-xs text-indigo-100/90 dark:text-slate-300 mt-0.5 leading-snug">
       {gameMode === 'mult'
         ? 'Festigt das 1×1 im Langzeitgedächtnis und schaltet Umkehraufgaben frei.'
         : 'Festigt Zerlegungen und Zehnerstopp im Langzeitgedächtnis.'}
@@ -216,7 +216,7 @@
     <button
       type="button"
       onclick={onStartDailySession}
-      class="mt-3.5 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition btn-calm-primary cursor-pointer border-none shadow-sm"
+      class="mt-3.5 w-full bg-white hover:bg-indigo-50 text-indigo-950 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:text-white font-black py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition cursor-pointer border-none shadow-md active:translate-y-0.5 tactile-btn"
     >
       <span>▶</span>
       <span>Tages-Mission starten</span>
@@ -243,10 +243,10 @@
       <button
         type="button"
         onclick={handleWeakSpotsClick}
-        class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between cursor-pointer {
+        class="tactile-btn text-left p-3.5 rounded-3xl border transition flex flex-col justify-between cursor-pointer {
           weakSpotCount > 0
-            ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 shadow-2xs hover:border-amber-400'
-            : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-400'
+            ? 'bg-white dark:bg-[#141b2d] border-amber-300 dark:border-amber-800/60 shadow-[0_4px_16px_rgba(245,158,11,0.06)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.4)] hover:border-amber-400'
+            : 'bg-white dark:bg-[#141b2d] border-emerald-300 dark:border-emerald-800/60 shadow-[0_4px_16px_rgba(16,185,129,0.06)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.4)] hover:border-emerald-400'
         }"
       >
         <div>
@@ -254,8 +254,8 @@
             <span class="text-base">🧠</span>
             <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full {
               weakSpotCount > 0
-                ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
-                : 'bg-emerald-200 dark:bg-emerald-900/70 text-emerald-900 dark:text-emerald-200'
+                ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
+                : 'bg-emerald-100 dark:bg-emerald-900/70 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
             }">
               {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest! ✓'}
             </span>
@@ -284,12 +284,12 @@
       <button
         type="button"
         onclick={onStartBlitz}
-        class="card-press text-left p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800/60 transition cursor-pointer flex flex-col justify-between shadow-2xs"
+        class="tactile-btn text-left p-3.5 rounded-3xl bg-white dark:bg-[#141b2d] border border-indigo-200/90 dark:border-indigo-800/60 shadow-[0_4px_16px_rgba(79,70,229,0.06)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.4)] transition cursor-pointer flex flex-col justify-between"
       >
         <div>
           <div class="flex items-center justify-between">
             <span class="text-base">⚡</span>
-            <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full bg-indigo-200 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200">
+            <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
               60s Sprint
             </span>
           </div>
@@ -382,7 +382,7 @@
       if (e.key === 'Escape') showNoWeakSpotsModal = false;
     }}
   >
-    <div class="bg-white dark:bg-[#111827] w-full max-w-sm rounded-3xl p-6 border-2 border-emerald-400 dark:border-emerald-700 shadow-2xl text-center space-y-4 animate-scale-up">
+    <div class="bg-white dark:bg-[#141b2d] w-full max-w-sm rounded-3xl p-6 border-2 border-emerald-400 dark:border-emerald-700 shadow-2xl text-center space-y-4 animate-scale-up">
       <div class="text-5xl animate-bounce">
         🌟
       </div>
