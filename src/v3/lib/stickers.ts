@@ -17,13 +17,13 @@ export const STICKER_CATEGORIES: { id: StickerCategory; label: string; icon: str
 ];
 
 export const ALL_STICKERS: StickerItem[] = [
-  // --- 🐾 TIERE & NATUR (5 – 10 ⭐) ---
+  // --- 🐾 TIERE & NATUR (15 – 35 ⭐) ---
   {
     id: 'tier_fuchs',
     name: 'Schlauer Fuchs',
     emoji: '🦊',
     category: 'animals',
-    cost: 5,
+    cost: 15,
     description: 'Rechnet blitzschnell und findet immer den cleversten Trick.',
   },
   {
@@ -31,7 +31,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Schneller Hase',
     emoji: '🐰',
     category: 'animals',
-    cost: 5,
+    cost: 15,
     description: 'Hüpft munter von Aufgabe zu Aufgabe ohne Rast.',
   },
   {
@@ -39,7 +39,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Weise Eule',
     emoji: '🦉',
     category: 'animals',
-    cost: 8,
+    cost: 20,
     description: 'Behält auch bei großen Zahlen stets den vollen Durchblick.',
   },
   {
@@ -47,7 +47,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Mutiger Löwe',
     emoji: '🦁',
     category: 'animals',
-    cost: 8,
+    cost: 25,
     description: 'Stellt sich tapfer jeder noch so kniffligen Königsaufgabe.',
   },
   {
@@ -55,7 +55,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Fröhlicher Delfin',
     emoji: '🐬',
     category: 'animals',
-    cost: 10,
+    cost: 30,
     description: 'Gleitet spielerisch und mit Freude durch alle Zahlenmeere.',
   },
   {
@@ -63,17 +63,17 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Entspannter Panda',
     emoji: '🐼',
     category: 'animals',
-    cost: 10,
+    cost: 35,
     description: 'Bleibt auch bei schwierigen Aufgaben immer ruhig und gelassen.',
   },
 
-  // --- 🚀 WELTRAUM & GALAXIE (10 – 15 ⭐) ---
+  // --- 🚀 WELTRAUM & GALAXIE (45 – 80 ⭐) ---
   {
     id: 'space_stern',
     name: 'Glitzer-Stern',
     emoji: '⭐',
     category: 'space',
-    cost: 10,
+    cost: 45,
     description: 'Leuchtet golden für jede gelöste Aufgabe am Rechenhimmel.',
   },
   {
@@ -81,7 +81,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Turbo-Rakete',
     emoji: '🚀',
     category: 'space',
-    cost: 12,
+    cost: 50,
     description: 'Schießt deinen Highscore mit Lichtgeschwindigkeit nach oben.',
   },
   {
@@ -89,7 +89,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Kosmo-Alien',
     emoji: '👽',
     category: 'space',
-    cost: 12,
+    cost: 60,
     description: 'Erforscht neugierig fremde Planeten und neue Rechenregeln.',
   },
   {
@@ -97,7 +97,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Sternen-Astronaut',
     emoji: '🧑‍🚀',
     category: 'space',
-    cost: 15,
+    cost: 65,
     description: 'Macht riesige Schritte und schwebt sicher über alle Hürden.',
   },
   {
@@ -105,7 +105,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Schnelles UFO',
     emoji: '🛸',
     category: 'space',
-    cost: 15,
+    cost: 75,
     description: 'Landet punktgenau und federleicht auf dem richtigen Ergebnis.',
   },
   {
@@ -113,17 +113,17 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Ring-Planet',
     emoji: '🪐',
     category: 'space',
-    cost: 15,
+    cost: 80,
     description: 'Ein ganzes Sonnensystem voller mathematischer Entdeckungen.',
   },
 
-  // --- 🦄 MAGIE & FABELWESEN (15 – 20 ⭐) ---
+  // --- 🦄 MAGIE & FABELWESEN (100 – 160 ⭐) ---
   {
     id: 'magic_pilz',
     name: 'Glücks-Pilz',
     emoji: '🍄',
     category: 'magic',
-    cost: 15,
+    cost: 100,
     description: 'Schenkt dir Extra-Konzentration bei Wackelkandidaten.',
   },
   {
@@ -131,7 +131,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Zauberhut',
     emoji: '🧙',
     category: 'magic',
-    cost: 16,
+    cost: 110,
     description: 'Verwandelt schwere Rechnungen im Nu in kinderleichte Schritte.',
   },
   {
@@ -139,7 +139,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Glaskugel',
     emoji: '🔮',
     category: 'magic',
-    cost: 18,
+    cost: 120,
     description: 'Sieht das richtige Ergebnis schon vor dem Eintippen voraus.',
   },
   {
@@ -147,7 +147,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Zauberstab',
     emoji: '🪄',
     category: 'magic',
-    cost: 18,
+    cost: 135,
     description: 'Ein kleiner Schwung und schon sitzt das 1×1 wie von Zauberhand.',
   },
   {
@@ -155,7 +155,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Sternen-Einhorn',
     emoji: '🦄',
     category: 'magic',
-    cost: 20,
+    cost: 150,
     description: 'Galoppiert stolz über bunte Regenbögen zum Tages-Ziel.',
   },
   {
@@ -163,17 +163,17 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Feuer-Drache',
     emoji: '🐉',
     category: 'magic',
-    cost: 20,
+    cost: 160,
     description: 'Brennt voller Begeisterung für neue Rekorde und Auszeichnungen.',
   },
 
-  // --- 🏆 MATHE-CHAMPIONS & TROPHÄEN (20 – 30 ⭐) ---
+  // --- 🏆 MATHE-CHAMPIONS & TROPHÄEN (200 – 500 ⭐) ---
   {
     id: 'champ_blitz',
     name: 'Blitz-Meister',
     emoji: '⚡',
     category: 'champions',
-    cost: 20,
+    cost: 200,
     description: 'Schneller als der Blitz – automatisiertes Kopfrechnen in Perfektion.',
   },
   {
@@ -181,7 +181,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Rechen-Roboter',
     emoji: '🤖',
     category: 'champions',
-    cost: 22,
+    cost: 250,
     description: 'Rechnet unermüdlich und fehlerfrei wie ein Supercomputer.',
   },
   {
@@ -189,7 +189,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Zahlen-Superheld',
     emoji: '🦸',
     category: 'champions',
-    cost: 25,
+    cost: 300,
     description: 'Rettet jeden Wackelkandidaten und meistert die ganze Tafel.',
   },
   {
@@ -197,7 +197,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Gold-Pokal',
     emoji: '🏆',
     category: 'champions',
-    cost: 25,
+    cost: 350,
     description: 'Die Trophäe für echte Ausdauer und fleißiges tägliches Üben.',
   },
   {
@@ -205,7 +205,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Meister-Diamant',
     emoji: '💎',
     category: 'champions',
-    cost: 28,
+    cost: 400,
     description: 'Funkelnd und unzerstörbar im Langzeitgedächtnis verankert.',
   },
   {
@@ -213,7 +213,7 @@ export const ALL_STICKERS: StickerItem[] = [
     name: 'Königs-Krone',
     emoji: '👑',
     category: 'champions',
-    cost: 30,
+    cost: 500,
     description: 'Die höchste Krone für wahre Rechen-Legenden der 100er-Tafel.',
   },
 ];

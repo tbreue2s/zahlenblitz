@@ -13,7 +13,7 @@ for (const s of ALL_STICKERS) {
   ids.add(s.id);
   assert.ok(s.name.length > 0, `Sticker ${s.id} braucht einen Namen`);
   assert.ok(s.emoji.length > 0, `Sticker ${s.id} braucht ein Emoji`);
-  assert.ok(s.cost >= 5 && s.cost <= 30, `Sticker ${s.id} Kosten müssen zwischen 5 und 30 liegen: ${s.cost}`);
+  assert.ok(s.cost >= 15 && s.cost <= 500, `Sticker ${s.id} Kosten müssen zwischen 15 und 500 liegen: ${s.cost}`);
   assert.ok(['animals', 'space', 'magic', 'champions'].includes(s.category), `Ungültige Kategorie für ${s.id}`);
 }
 console.log('✓ Test 1 bestanden: Alle 24 Sticker sind valide und besitzen eindeutige IDs & faire Preise.');
