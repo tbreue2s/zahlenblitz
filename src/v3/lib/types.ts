@@ -94,6 +94,8 @@ export interface UserProfileV3 {
   multFacts: FactFamily[];        // Exakt 100 Fakten
   plusMinusStats: UserStatsV3;
   plusMinusFacts: FactFamily[];   // Exakt 100 Fakten
+  unlockedStickers?: string[];    // IDs der freigeschalteten Sammel-Sticker
+  activeBadge?: string;           // Optionaler Lieblings-Sticker als Abzeichen
 }
 
 export interface EquationPartsV3 {

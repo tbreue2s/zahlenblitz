@@ -130,6 +130,32 @@
     });
   }
 
+  function handleSaveStickers(
+    unlockedStickers: string[],
+    newStars: number,
+    newBadge?: string,
+    newAvatar?: string
+  ) {
+    updateActiveProfile((prof) => {
+      const isMult = prof.activeGameMode === 'mult';
+      const updatedMultStats = isMult
+        ? { ...prof.multStats, stars: newStars }
+        : prof.multStats;
+      const updatedPmStats = !isMult
+        ? { ...prof.plusMinusStats, stars: newStars }
+        : prof.plusMinusStats;
+
+      return {
+        ...prof,
+        avatar: newAvatar ?? prof.avatar,
+        activeBadge: newBadge ?? prof.activeBadge,
+        unlockedStickers,
+        multStats: updatedMultStats,
+        plusMinusStats: updatedPmStats,
+      };
+    });
+  }
+
   function handleStartChapterSession(chapter: WorldChapterV3) {
     activeSessionQueue = buildChapterSessionQueueV3(chapter, stats.sessionSize);
     currentScreen = 'practice';
@@ -258,6 +284,7 @@
       onPracticeFact={handlePracticeFact}
       onOpenUsers={() => (currentScreen = 'users')}
       onOpenLegal={() => (currentScreen = 'legal')}
+      onSaveStickers={handleSaveStickers}
     />
   {:else if currentScreen === 'practice'}
     <PracticeView

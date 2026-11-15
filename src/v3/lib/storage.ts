@@ -66,6 +66,7 @@ export function createNewProfileV3(
     multFacts: generateMultFacts(),
     plusMinusStats: getDefaultStatsV3(),
     plusMinusFacts: generatePlusMinusFacts(),
+    unlockedStickers: [],
   };
 }
 
@@ -101,10 +102,14 @@ export function loadV3ProfilesAndActiveId(): {
           }
         }
 
+        const sanitized = parsed.map((p) => ({
+          ...p,
+          unlockedStickers: p.unlockedStickers ?? [],
+        }));
         const savedActiveId = window.localStorage.getItem(V3_ACTIVE_PROFILE_ID_KEY);
-        const exists = parsed.some((p) => p.id === savedActiveId);
-        const activeProfileId = exists && savedActiveId ? savedActiveId : parsed[0].id;
-        return { profiles: parsed, activeProfileId };
+        const exists = sanitized.some((p) => p.id === savedActiveId);
+        const activeProfileId = exists && savedActiveId ? savedActiveId : sanitized[0].id;
+        return { profiles: sanitized, activeProfileId };
       }
     }
 

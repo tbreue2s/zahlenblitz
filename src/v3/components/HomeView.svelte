@@ -4,6 +4,7 @@
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
   import ParentalGateModal from './ParentalGateModal.svelte';
   import Heatmap from './Heatmap.svelte';
+  import StickerModal from './StickerModal.svelte';
 
   interface Props {
     gameMode: GameMode;
@@ -22,6 +23,12 @@
     onPracticeFact: (fact: FactFamily) => void;
     onOpenUsers: () => void;
     onOpenLegal: () => void;
+    onSaveStickers?: (
+      unlockedStickers: string[],
+      newStars: number,
+      newBadge?: string,
+      newAvatar?: string
+    ) => void;
   }
 
   let {
@@ -41,6 +48,7 @@
     onPracticeFact,
     onOpenUsers,
     onOpenLegal,
+    onSaveStickers,
   }: Props = $props();
 
   let dueCount = $derived(countDueFactsV3(facts));
@@ -48,6 +56,7 @@
 
   let showUserDropdown = $state(false);
   let showParentalGate = $state(false);
+  let showStickerModal = $state(false);
 </script>
 
 <div class="w-full max-w-lg mx-auto space-y-3.5 pb-8">
@@ -129,14 +138,18 @@
 
     <!-- Stats & Quick Actions -->
     <div class="flex items-center gap-1.5 text-xs font-bold">
-      <!-- Sterne -->
-      <div
-        class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 shadow-2xs"
-        title="{stats.stars} gesammelte Sterne"
+      <!-- Sterne (Klick öffnet Sticker-Album & Belohnungen) -->
+      <button
+        type="button"
+        onclick={() => (showStickerModal = true)}
+        class="card-press flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 px-2.5 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 shadow-2xs cursor-pointer transition"
+        title="{stats.stars} gesammelte Sterne · Tippe für dein Sticker-Album ✨"
+        aria-label="Sticker-Album öffnen, {stats.stars} Sterne gesammelt"
       >
         <span class="text-amber-500 text-xs">⭐</span>
         <span class="font-extrabold">{stats.stars}</span>
-      </div>
+        <span class="text-[9.5px] text-amber-500 font-black">✨</span>
+      </button>
 
       <!-- Sound Toggle -->
       <button
@@ -322,5 +335,20 @@
       onOpenUsers();
     }}
     onCancel={() => (showParentalGate = false)}
+  />
+{/if}
+
+<!-- STICKER-ALBUM & BELOHNUNGEN MODAL -->
+{#if showStickerModal}
+  <StickerModal
+    initialStars={stats.stars}
+    initialUnlockedStickers={activeProfile.unlockedStickers ?? []}
+    initialBadge={activeProfile.activeBadge}
+    initialAvatar={activeProfile.avatar}
+    {soundEnabled}
+    onSave={(unlocked, newStars, newBadge, newAvatar) => {
+      onSaveStickers?.(unlocked, newStars, newBadge, newAvatar);
+    }}
+    onClose={() => (showStickerModal = false)}
   />
 {/if}
