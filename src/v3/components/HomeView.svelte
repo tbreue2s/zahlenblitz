@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { playSuccessSound } from '../lib/audio';
   import type { WorldChapterV3 } from '../lib/chapters';
   import { countDueFactsV3, getWeakSpotFactsV3 } from '../lib/storage';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
@@ -57,6 +58,16 @@
   let showUserDropdown = $state(false);
   let showParentalGate = $state(false);
   let showStickerModal = $state(false);
+  let showNoWeakSpotsModal = $state(false);
+
+  function handleWeakSpotsClick() {
+    if (weakSpotCount > 0) {
+      onStartWeakSpots();
+    } else {
+      playSuccessSound(soundEnabled, false);
+      showNoWeakSpotsModal = true;
+    }
+  }
 </script>
 
 <div class="w-full max-w-lg mx-auto space-y-3.5 pb-8">
@@ -231,12 +242,11 @@
       <!-- Wackelkandidaten-Trainer -->
       <button
         type="button"
-        onclick={onStartWeakSpots}
-        disabled={weakSpotCount === 0}
-        class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between {
+        onclick={handleWeakSpotsClick}
+        class="card-press text-left p-3 rounded-2xl border transition flex flex-col justify-between cursor-pointer {
           weakSpotCount > 0
-            ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 cursor-pointer shadow-2xs'
-            : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 opacity-70 cursor-default'
+            ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 shadow-2xs hover:border-amber-400'
+            : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-400'
         }"
       >
         <div>
@@ -245,23 +255,27 @@
             <span class="text-[9.5px] font-black px-1.5 py-0.5 rounded-full {
               weakSpotCount > 0
                 ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
-                : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                : 'bg-emerald-200 dark:bg-emerald-900/70 text-emerald-900 dark:text-emerald-200'
             }">
-              {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest!'}
+              {weakSpotCount > 0 ? `${weakSpotCount} Knacknüsse` : 'Alles fest! ✓'}
             </span>
           </div>
           <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-1.5 leading-tight">
             Wackelkandidaten
           </div>
           <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-            {weakSpotCount > 0 ? 'Schwierige Aufgaben gezielt festigen' : 'Keine Wackelkandidaten!'}
+            {weakSpotCount > 0 ? 'Schwierige Aufgaben gezielt festigen' : 'Aktuell keine Knacknüsse!'}
           </div>
         </div>
-        <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+        <div class="text-[10px] font-bold mt-2 flex items-center gap-1 {
+          weakSpotCount > 0
+            ? 'text-amber-600 dark:text-amber-400'
+            : 'text-emerald-600 dark:text-emerald-400'
+        }">
           {#if weakSpotCount > 0}
             <span>Starten</span> <span>›</span>
           {:else}
-            <span class="text-emerald-600 dark:text-emerald-400">Alles sicher ✓</span>
+            <span>Tippen für Info ✓</span>
           {/if}
         </div>
       </button>
@@ -351,4 +365,47 @@
     }}
     onClose={() => (showStickerModal = false)}
   />
+{/if}
+
+<!-- LOB-MODAL: KEINE WACKELKANDIDATEN -->
+{#if showNoWeakSpotsModal}
+  <div
+    class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Keine Wackelkandidaten"
+    tabindex="-1"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) showNoWeakSpotsModal = false;
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') showNoWeakSpotsModal = false;
+    }}
+  >
+    <div class="bg-white dark:bg-[#111827] w-full max-w-sm rounded-3xl p-6 border-2 border-emerald-400 dark:border-emerald-700 shadow-2xl text-center space-y-4 animate-scale-up">
+      <div class="text-5xl animate-bounce">
+        🌟
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-white m-0">
+          Klasse Leistung!
+        </h3>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+          Du hast aktuell <strong>keine Wackelkandidaten</strong>! Alle Aufgaben, die du bisher gerechnet hast, sitzen schon sicher im Gedächtnis.
+        </p>
+      </div>
+
+      <div class="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+        Mach einfach mit der <strong>Tages-Mission</strong> weiter, um neue Aufgaben zu meistern! 🚀
+      </div>
+
+      <button
+        type="button"
+        onclick={() => (showNoWeakSpotsModal = false)}
+        class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-sm transition cursor-pointer border-none"
+      >
+        Super, verstanden! 👏
+      </button>
+    </div>
+  </div>
 {/if}

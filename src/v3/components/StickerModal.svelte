@@ -252,13 +252,19 @@
                   Im Album
                 </span>
               {:else}
+                {@const missingStars = sticker.cost - tempStars}
                 <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full flex items-center justify-center gap-1 {
                   canAfford
-                    ? 'bg-amber-200 text-amber-900 dark:bg-amber-900/70 dark:text-amber-200'
+                    ? 'bg-amber-200 text-amber-900 dark:bg-amber-900/70 dark:text-amber-200 shadow-2xs'
                     : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                 }">
                   <span>⭐</span>
                   <span>{sticker.cost}</span>
+                  {#if !canAfford}
+                    <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400">
+                      (noch {missingStars})
+                    </span>
+                  {/if}
                 </span>
               {/if}
             </div>
@@ -322,8 +328,15 @@
                 <span>⭐ Für {selectedStickerForDetail.cost} Sterne kaufen</span>
               </button>
             {:else}
-              <div class="text-[11px] font-bold text-slate-500 text-center w-full py-1">
-                Noch {selectedStickerForDetail.cost - tempStars} ⭐ benötigt (übe weiter für Sterne!)
+              {@const needed = selectedStickerForDetail.cost - tempStars}
+              <div class="w-full p-2.5 rounded-xl bg-amber-100/90 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 text-center space-y-0.5 animate-fade-in">
+                <div class="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center justify-center gap-1.5">
+                  <span>🔒</span>
+                  <span>Noch {needed} ⭐ sammeln!</span>
+                </div>
+                <div class="text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
+                  Du hast {tempStars} von {selectedStickerForDetail.cost} Sternen. Übe fleißig weiter! 🚀
+                </div>
               </div>
             {/if}
           </div>
@@ -341,7 +354,7 @@
               Sticker „{pendingPurchase.name}“ freischalten?
             </span>
             <span class="text-[10px] text-amber-700 dark:text-amber-300">
-              Kostet {pendingPurchase.cost} ⭐ (du hast {tempStars} ⭐)
+              Kostet {pendingPurchase.cost} ⭐ · Du hast danach noch {tempStars - pendingPurchase.cost} ⭐ übrig
             </span>
           </div>
         </div>
