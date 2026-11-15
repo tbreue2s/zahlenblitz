@@ -9,6 +9,7 @@
   import { selectTaskVariant } from './lib/generator';
   import {
     buildDailySessionQueueV3,
+    buildRowSessionQueueV3,
     buildWeakSpotsSessionQueueV3,
     checkNeedsOnboardingV3,
     createNewProfileV3,
@@ -170,6 +171,11 @@
     currentScreen = 'practice';
   }
 
+  function handleStartRowSession(rowNumber: number) {
+    activeSessionQueue = buildRowSessionQueueV3(facts, rowNumber, stats.sessionSize);
+    currentScreen = 'practice';
+  }
+
   function handlePracticeFact(fact: FactFamily) {
     activeSessionQueue = [{ fact, variant: selectTaskVariant(fact) }];
     currentScreen = 'practice';
@@ -310,6 +316,7 @@
       onStartWeakSpots={handleStartWeakSpots}
       onStartBlitz={handleStartBlitz}
       onStartChapterSession={handleStartChapterSession}
+      onStartRowSession={handleStartRowSession}
       onPracticeFact={handlePracticeFact}
       onOpenUsers={() => (currentScreen = 'users')}
       onOpenLegal={() => (currentScreen = 'legal')}

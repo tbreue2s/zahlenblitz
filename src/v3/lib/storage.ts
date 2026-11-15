@@ -264,10 +264,25 @@ export function buildDailySessionQueueV3(
     });
 
   // 2. Neue ungelernte Fakten – STRENG GEFILTERT auf die aktuell freigeschalteten Welten!
-  const unlearned = facts
-    .filter((f) => f.totalAttempts === 0 && accessibleIds.has(f.id))
-    .sort((a, b) => {
-      // Zerlegungen und Kernreihen zuerst
+  const unlearnedRaw = facts
+    .filter((f) => f.totalAttempts === 0 && accessibleIds.has(f.id));
+
+  let unlearned: FactFamily[];
+  if (freeWorldChoice) {
+    // Bei freier Weltenwahl: Round-Robin Mischung aus allen 3 Welten,
+    // damit nicht erst alle 45/64 einfachen Aufgaben von Welt 1 abgearbeitet werden müssen!
+    const u1 = unlearnedRaw.filter((f) => getFactWorld(f) === 1).sort(() => Math.random() - 0.5);
+    const u2 = unlearnedRaw.filter((f) => getFactWorld(f) === 2).sort(() => Math.random() - 0.5);
+    const u3 = unlearnedRaw.filter((f) => getFactWorld(f) === 3).sort(() => Math.random() - 0.5);
+    unlearned = [];
+    while (u1.length > 0 || u2.length > 0 || u3.length > 0) {
+      if (u1.length > 0) unlearned.push(u1.shift()!);
+      if (u2.length > 0) unlearned.push(u2.shift()!);
+      if (u3.length > 0) unlearned.push(u3.shift()!);
+    }
+  } else {
+    unlearned = [...unlearnedRaw].sort((a, b) => {
+      // Zerlegungen und Kernreihen zuerst (didaktischer Stufenaufbau)
       const getPrio = (f: FactFamily) => {
         if (f.mode === 'plusminus') {
           if (f.c <= 6) return 1;
@@ -283,6 +298,7 @@ export function buildDailySessionQueueV3(
       };
       return getPrio(a) - getPrio(b);
     });
+  }
 
   // 3. Zukünftige Festigungs-Fakten (nur aus freigeschalteten Welten)
   const upcoming = facts
@@ -340,6 +356,69 @@ export function buildDailySessionQueueV3(
       variant: selectTaskVariant(fact, allowInverse),
     };
   });
+
+  return smartShuffleV3(tasks);
+}
+
+/**
+ * Erstellt eine gezielte Übungsrunde für eine bestimmte Reihe (z. B. 7er-Reihe oder Rechnen mit 7).
+ * Beinhaltet alle 10 Kern-Aufgaben dieser Reihe, priorisiert fällige/ungelernte und mischt sie.
+ */
+export function buildRowSessionQueueV3(
+  facts: FactFamily[],
+  targetNumber: number,
+  sessionSize = 10
+): QueuedTaskV3[] {
+  // Bevorzuge primär a === targetNumber (z. B. 7 × 1 .. 7 × 10), ergänze mit Tauschaufgaben (b === targetNumber)
+  const primaryFacts = facts.filter((f) => f.a === targetNumber);
+  const secondaryFacts = facts.filter((f) => f.b === targetNumber && f.a !== targetNumber);
+  const pool = [...primaryFacts, ...secondaryFacts];
+
+  if (pool.length === 0) return [];
+
+  // Fällige / fehlerhafte Aufgaben zuerst
+  const due = pool.filter(
+    (f) => f.totalAttempts > 0 && (f.dueDate <= Date.now() || f.repetitions === 0)
+  );
+  const unlearned = pool.filter((f) => f.totalAttempts === 0);
+  const mastered = pool.filter((f) => f.repetitions > 0);
+
+  const selectedFacts: FactFamily[] = [];
+
+  // 1. Fällige Wiederholungen
+  selectedFacts.push(...due);
+
+  // 2. Neue ungelernte Aufgaben dieser Reihe
+  for (const f of unlearned) {
+    if (selectedFacts.length >= sessionSize) break;
+    if (!selectedFacts.some((s) => s.id === f.id)) {
+      selectedFacts.push(f);
+    }
+  }
+
+  // 3. Mit Wiederholungen auffüllen
+  for (const f of mastered.sort(() => Math.random() - 0.5)) {
+    if (selectedFacts.length >= sessionSize) break;
+    if (!selectedFacts.some((s) => s.id === f.id)) {
+      selectedFacts.push(f);
+    }
+  }
+
+  // 4. Fallback aus primaryFacts
+  for (const f of primaryFacts) {
+    if (selectedFacts.length >= sessionSize) break;
+    if (!selectedFacts.some((s) => s.id === f.id)) {
+      selectedFacts.push(f);
+    }
+  }
+
+  // Prüfen, ob alle Basisaufgaben dieser Reihe bereits mindestens 1x gelöst wurden
+  const allBaseLearned = primaryFacts.every((f) => f.repetitions >= 1);
+
+  const tasks: QueuedTaskV3[] = selectedFacts.slice(0, sessionSize).map((fact) => ({
+    fact,
+    variant: selectTaskVariant(fact, allBaseLearned),
+  }));
 
   return smartShuffleV3(tasks);
 }

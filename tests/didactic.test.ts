@@ -157,6 +157,7 @@ console.log('✓ Test 4 bestanden: SM-2 Engine bewertet fair, differenziert Zeit
 // --- TEST 5: Didaktischer Welten-Schutz (Curriculum Progression Guard) ---
 import {
   buildDailySessionQueueV3,
+  buildRowSessionQueueV3,
   getWeakSpotFactsV3,
   buildWeakSpotsSessionQueueV3,
   buildBlitzChallengeQueueV3,
@@ -193,7 +194,31 @@ const { accessibleFacts: freePool, unlockedWorldCount: freeCount } =
 assert.strictEqual(freeCount, 3, 'Bei freier Weltenwahl müssen alle 3 Welten freigeschaltet sein');
 assert.strictEqual(freePool.length, 100, 'Bei freier Weltenwahl müssen alle 100 Fakten zugänglich sein');
 
-console.log('✓ Test 5 bestanden: Welten-Schutz und Geteilt-Schutz verhindern Überforderung, freie Weltenwahl funktioniert.');
+// Prüfe: Bei freier Weltenwahl zieht die Tages-Mission sofort Aufgaben aus allen Welten (auch Welt 2 und 3!)
+const freeDailyQueue = buildDailySessionQueueV3(freshMultFacts, 10, Date.now(), true);
+assert.strictEqual(freeDailyQueue.length, 10, 'Free daily queue muss 10 Aufgaben haben');
+const worldsInFreeQueue = new Set(freeDailyQueue.map((item) => {
+  if (item.fact.a === 1 || item.fact.a === 2 || item.fact.a === 5 || item.fact.a === 10 ||
+      item.fact.b === 1 || item.fact.b === 2 || item.fact.b === 5 || item.fact.b === 10) return 1;
+  if (item.fact.a === 3 || item.fact.a === 4 || item.fact.b === 3 || item.fact.b === 4) return 2;
+  return 3;
+}));
+assert.ok(worldsInFreeQueue.has(2) || worldsInFreeQueue.has(3), 'Bei freier Weltenwahl müssen auch Welt 2 oder 3 in der Tages-Mission vorkommen');
+
+// Prüfe: Gezieltes Reihen-Training (z. B. 7er-Reihe bei 1x1 und 5er-Reihe bei Zahlen-Held)
+const row7Queue = buildRowSessionQueueV3(freshMultFacts, 7, 10);
+assert.strictEqual(row7Queue.length, 10, '7er-Reihe Queue muss 10 Aufgaben liefern');
+for (const item of row7Queue) {
+  assert.ok(item.fact.a === 7 || item.fact.b === 7, `Jede Aufgabe der 7er-Reihe muss a=7 oder b=7 enthalten: ${item.fact.a}x${item.fact.b}`);
+}
+
+const row5PMQueue = buildRowSessionQueueV3(pmFacts, 5, 10);
+assert.strictEqual(row5PMQueue.length, 10, '5er-Reihe PM Queue muss 10 Aufgaben liefern');
+for (const item of row5PMQueue) {
+  assert.ok(item.fact.a === 5 || item.fact.b === 5, `Jede Aufgabe der 5er-Reihe muss a=5 oder b=5 enthalten: ${item.fact.a}+${item.fact.b}`);
+}
+
+console.log('✓ Test 5 bestanden: Welten-Schutz, Geteilt-Schutz, freie Weltenwahl und gezieltes Reihen-Training funktionieren.');
 
 // --- TEST 6: Wackelkandidaten & 60s Blitz-Challenge ---
 const factsWithFlaws = generateMultFacts().map((f, i) => {

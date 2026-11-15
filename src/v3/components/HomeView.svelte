@@ -21,6 +21,7 @@
     onStartWeakSpots: () => void;
     onStartBlitz: () => void;
     onStartChapterSession: (chapter: WorldChapterV3) => void;
+    onStartRowSession?: (rowNumber: number) => void;
     onPracticeFact: (fact: FactFamily) => void;
     onOpenUsers: () => void;
     onOpenLegal: () => void;
@@ -46,6 +47,7 @@
     onStartWeakSpots,
     onStartBlitz,
     onStartChapterSession,
+    onStartRowSession,
     onPracticeFact,
     onOpenUsers,
     onOpenLegal,
@@ -229,6 +231,8 @@
     {facts}
     freeWorldChoice={activeProfile.freeWorldChoice ?? false}
     onPracticeFact={onPracticeFact}
+    onStartChapterSession={onStartChapterSession}
+    onStartRowSession={onStartRowSession}
   />
 
   <!-- 5. WEITERE TRAININGS-MODI: WACKELKANDIDATEN & 60s BLITZ-CHALLENGE -->
