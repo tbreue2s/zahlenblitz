@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import {
   classifyStrategyMult,
   classifyStrategyPM,
+  formatEquationPartsV3,
   generateMultFacts,
   generatePlusMinusFacts,
   selectTaskVariant,
@@ -85,10 +86,28 @@ const masteredFact: FactFamily = { ...pmFacts[0], repetitions: 3, masteredVarian
 let sawGap = false;
 for (let i = 0; i < 500; i++) {
   const v = selectTaskVariant(masteredFact);
-  if (v.startsWith('gap_')) sawGap = true;
+  if (v.startsWith('gap_')) {
+    sawGap = true;
+    assert.ok(v === 'gap_add_b' || v === 'gap_sub_b', `Nur standardisierte PlusMinus-Lücken erlaubt: ${v}`);
+    const task = formatEquationPartsV3(masteredFact, v);
+    assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
+  }
 }
 assert.ok(sawGap, 'Bei repetitions >= 2 müssen auch Lückenaufgaben vorkommen');
-console.log('✓ Test 3 bestanden: Varianten-Auswahl schützt vor Überforderung und steigert sich stufenweise.');
+
+const masteredMultFact: FactFamily = { ...multFacts[0], repetitions: 3, masteredVariants: [] };
+let sawMultGap = false;
+for (let i = 0; i < 500; i++) {
+  const v = selectTaskVariant(masteredMultFact);
+  if (v.startsWith('gap_')) {
+    sawMultGap = true;
+    assert.ok(v === 'gap_mult_b' || v === 'gap_div_a', `Nur standardisierte 1x1-Lücken erlaubt: ${v}`);
+    const task = formatEquationPartsV3(masteredMultFact, v);
+    assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
+  }
+}
+assert.ok(sawMultGap, 'Bei repetitions >= 2 müssen auch 1x1-Lückenaufgaben vorkommen');
+console.log('✓ Test 3 bestanden: Varianten-Auswahl schützt vor Überforderung und alle Lückenaufgaben folgen strikt Zahl [Op] ? = Zahl.');
 
 // --- TEST 4: SM-2 Engine & Kindgerechte Zeitfenster ---
 assert.strictEqual(evaluateResponseQuality(true, 4000), 4, '4s ist q=4 (Blitzschnell)');

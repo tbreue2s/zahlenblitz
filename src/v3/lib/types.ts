@@ -3,18 +3,18 @@ export type GameMode = 'mult' | 'plusminus';
 export type MultVariant =
   | 'mult'        // a × b = ?
   | 'div'         // c : b = ?
-  | 'gap_mult_a'  // ? × b = c
-  | 'gap_mult_b'  // a × ? = c
-  | 'gap_div_c'   // ? : b = a
-  | 'gap_div_a';  // c : ? = b
+  | 'gap_mult_b'  // a × ? = c (Zahl × ? = Zahl)
+  | 'gap_div_a'   // c : ? = a (Zahl : ? = Zahl)
+  | 'gap_mult_a'  // (legacy) ? × b = c
+  | 'gap_div_c';  // (legacy) ? : b = a
 
 export type PlusMinusVariant =
   | 'add'         // a + b = ?
   | 'sub'         // c - b = ?
-  | 'gap_add_a'   // ? + b = c
-  | 'gap_add_b'   // a + ? = c
-  | 'gap_sub_b'   // c - ? = a
-  | 'gap_sub_c';  // ? - b = a
+  | 'gap_add_b'   // a + ? = c (Zahl + ? = Zahl)
+  | 'gap_sub_b'   // c - ? = a (Zahl - ? = Zahl)
+  | 'gap_add_a'   // (legacy) ? + b = c
+  | 'gap_sub_c';  // (legacy) ? - b = a
 
 export type TaskVariant = MultVariant | PlusMinusVariant;
 

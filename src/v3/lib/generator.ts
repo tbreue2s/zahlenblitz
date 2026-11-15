@@ -105,10 +105,8 @@ export function selectTaskVariant(fact: FactFamily): TaskVariant {
     const allMultVariants: MultVariant[] = [
       'mult',
       'div',
-      'gap_mult_b',
-      'gap_mult_a',
-      'gap_div_c',
-      'gap_div_a',
+      'gap_mult_b', // a × ? = c
+      'gap_div_a',  // c : ? = a
     ];
     const unmastered = allMultVariants.filter((v) => !fact.masteredVariants.includes(v));
     if (unmastered.length > 0) {
@@ -127,10 +125,8 @@ export function selectTaskVariant(fact: FactFamily): TaskVariant {
   const allPmVariants: PlusMinusVariant[] = [
     'add',
     'sub',
-    'gap_add_b',
-    'gap_add_a',
-    'gap_sub_b',
-    'gap_sub_c',
+    'gap_add_b', // a + ? = c
+    'gap_sub_b', // c − ? = a
   ];
   const unmastered = allPmVariants.filter((v) => !fact.masteredVariants.includes(v));
   if (unmastered.length > 0) {
