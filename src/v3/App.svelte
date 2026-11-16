@@ -35,6 +35,7 @@
   let showOnboarding = $state(checkNeedsOnboardingV3(loaded.profiles));
 
   let activeSessionQueue = $state<QueuedTaskV3[]>([]);
+  let highlightStars = $state(false);
 
   let activeProfile = $derived(
     profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
@@ -61,6 +62,7 @@
   }
 
   function handleSwitchGameMode(nextMode: GameMode) {
+    highlightStars = false;
     updateActiveProfile((prof) => ({
       ...prof,
       activeGameMode: nextMode,
@@ -119,6 +121,9 @@
   }
 
   function handleAddStars(additionalStars: number) {
+    if (additionalStars > 0) {
+      highlightStars = true;
+    }
     updateActiveProfile((prof) => {
       const mode = prof.activeGameMode ?? 'mult';
       if (mode === 'mult') {
@@ -225,6 +230,7 @@
   }
 
   function handleSelectProfile(id: string) {
+    highlightStars = false;
     activeProfileId = id;
     saveV3ProfilesAndActiveId(profiles, id);
   }
@@ -309,6 +315,8 @@
       {activeProfile}
       {profiles}
       soundEnabled={stats.soundEnabled}
+      {highlightStars}
+      onAcknowledgeStars={() => (highlightStars = false)}
       onSwitchGameMode={handleSwitchGameMode}
       onSelectProfile={handleSelectProfile}
       onToggleSound={handleToggleSound}
@@ -327,7 +335,12 @@
       initialQueue={activeSessionQueue}
       soundEnabled={stats.soundEnabled}
       onFactEvaluated={handleFactEvaluated}
-      onFinishSession={() => (currentScreen = 'home')}
+      onFinishSession={(completed) => {
+        if (completed) {
+          highlightStars = true;
+        }
+        currentScreen = 'home';
+      }}
       onRestartSession={() => {
         handleStartDailySession();
       }}
@@ -367,7 +380,7 @@
   <!-- Willkommens-Onboarding bei Erst-Start / ungespieltem Profil -->
   {#if showOnboarding}
     <OnboardingModal
-      initialName={activeProfile.name}
+      initialName={activeProfile.name === 'Spieler 1' ? '' : activeProfile.name}
       initialAvatar={activeProfile.avatar}
       initialMode={activeProfile.activeGameMode ?? 'plusminus'}
       soundEnabled={stats.soundEnabled}

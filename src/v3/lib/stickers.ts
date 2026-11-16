@@ -17,13 +17,13 @@ export const STICKER_CATEGORIES: { id: StickerCategory; label: string; icon: str
 ];
 
 export const ALL_STICKERS: StickerItem[] = [
-  // --- 🐾 TIERE & NATUR (15 – 35 ⭐) ---
+  // --- 🐾 TIERE & NATUR (10 – 35 ⭐) ---
   {
     id: 'tier_fuchs',
     name: 'Schlauer Fuchs',
     emoji: '🦊',
     category: 'animals',
-    cost: 15,
+    cost: 10,
     description: 'Rechnet blitzschnell und findet immer den cleversten Trick.',
   },
   {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { playSuccessSound } from '../lib/audio';
   import type { WorldChapterV3 } from '../lib/chapters';
+  import { ALL_STICKERS } from '../lib/stickers';
   import { countDueFactsV3, getWeakSpotFactsV3 } from '../lib/storage';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
   import ParentalGateModal from './ParentalGateModal.svelte';
@@ -14,6 +15,8 @@
     activeProfile: UserProfileV3;
     profiles: UserProfileV3[];
     soundEnabled: boolean;
+    highlightStars?: boolean;
+    onAcknowledgeStars?: () => void;
     onSwitchGameMode: (mode: GameMode) => void;
     onSelectProfile: (id: string) => void;
     onToggleSound: () => void;
@@ -40,6 +43,8 @@
     activeProfile,
     profiles,
     soundEnabled,
+    highlightStars = false,
+    onAcknowledgeStars,
     onSwitchGameMode,
     onSelectProfile,
     onToggleSound,
@@ -56,6 +61,11 @@
 
   let dueCount = $derived(countDueFactsV3(facts));
   let weakSpotCount = $derived(getWeakSpotFactsV3(facts).length);
+  let canAffordNewSticker = $derived.by(() => {
+    const unlocked = new Set(activeProfile.unlockedStickers ?? []);
+    return ALL_STICKERS.some((s) => !unlocked.has(s.id) && stats.stars >= s.cost);
+  });
+  let shouldPulseStars = $derived(highlightStars && canAffordNewSticker);
 
   let showUserDropdown = $state(false);
   let showParentalGate = $state(false);
@@ -154,13 +164,26 @@
       <!-- Sterne (Klick öffnet Sticker-Album & Belohnungen) -->
       <button
         type="button"
-        onclick={() => (showStickerModal = true)}
-        class="h-10 px-3.5 rounded-full flex items-center gap-1.5 font-extrabold text-[#0f1115] dark:text-white bg-white dark:bg-[#1c1c1e] ring-1 ring-inset ring-black/[0.08] dark:ring-white/[0.09] cursor-pointer transition active:scale-95"
+        onclick={() => {
+          showStickerModal = true;
+          onAcknowledgeStars?.();
+        }}
+        class="relative h-10 px-3.5 rounded-full flex items-center gap-1.5 font-extrabold text-[#0f1115] dark:text-white bg-white dark:bg-[#1c1c1e] ring-1 ring-inset cursor-pointer transition active:scale-95 {
+          shouldPulseStars
+            ? 'ring-amber-500/80 dark:ring-amber-400/80 animate-star-pulse'
+            : 'ring-black/[0.08] dark:ring-white/[0.09]'
+        }"
         title="{stats.stars} gesammelte Sterne · Tippe für dein Sticker-Album"
         aria-label="Sticker-Album öffnen, {stats.stars} Sterne gesammelt"
       >
-        <svg class="w-[18px] h-[18px] text-amber-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18.2 5.8 21.5 7 14.7l-5-4.9 6.9-1z"/></svg>
+        <svg class="w-[18px] h-[18px] text-amber-500 transition-transform {shouldPulseStars ? 'scale-110' : ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18.2 5.8 21.5 7 14.7l-5-4.9 6.9-1z"/></svg>
         <span>{stats.stars}</span>
+        {#if shouldPulseStars}
+          <span
+            class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-[#f2f3f5] dark:ring-black"
+            aria-hidden="true"
+          ></span>
+        {/if}
       </button>
 
       <!-- Sound Toggle -->

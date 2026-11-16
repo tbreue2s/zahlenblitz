@@ -27,7 +27,7 @@
       isCorrect: boolean,
       isFast: boolean
     ) => void;
-    onFinishSession: () => void;
+    onFinishSession: (completed?: boolean) => void;
     onRestartSession: () => void;
   }
 
@@ -296,7 +296,7 @@
     <div class="flex items-center justify-between gap-3 text-xs">
       <button
         type="button"
-        onclick={onFinishSession}
+        onclick={() => onFinishSession(false)}
         class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer"
       >
         ✕ Beenden
@@ -493,7 +493,7 @@
         </button>
         <button
           type="button"
-          onclick={onFinishSession}
+          onclick={() => onFinishSession(true)}
           class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs cursor-pointer border-none btn-calm-primary"
         >
           Zur Übersicht
