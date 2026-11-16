@@ -239,6 +239,108 @@ export function smartShuffleV3(tasks: QueuedTaskV3[]): QueuedTaskV3[] {
 }
 
 /**
+ * Ordnet ungelernte Fakten didaktisch ausgewogen und abwechslungsreich:
+ * - Verhindert starre Schleifenabfolgen (wie 1x1, 2x1, 3x1...)
+ * - Welt 1 bei 1x1: Mischt die 4 Kernreihen (2er, 5er, 10er, 1er) im Round-Robin,
+ *   sodass Verdoppeln (2x) und Fünfersprünge (5x) von der ersten Session an gleichberechtigt
+ *   neben den 1er- und 10er-Aufgaben vorkommen.
+ * - Welt 1 bei Zahlen-Held: Ausgewogene Mischung aus Verdoppeln, Partnern zur 10,
+ *   Fast-Verdoppeln und Zerlegungen.
+ * - Sukzessiver Weltenaufbau: Fakten aus freigeschalteten Welten werden weltweise
+ *   (oder bei freeWorldChoice weltübergreifend) geordnet.
+ */
+export function orderUnlearnedFactsV3(
+  unlearnedRaw: FactFamily[],
+  mode: GameMode,
+  freeWorldChoice = false
+): FactFamily[] {
+  if (unlearnedRaw.length === 0) return [];
+
+  // Hilfsfunktion: Mischt mehrere Eimer im Round-Robin-Verfahren
+  const roundRobin = (buckets: FactFamily[][]): FactFamily[] => {
+    const shuffledBuckets = buckets.map((b) => [...b].sort(() => Math.random() - 0.5));
+    const result: FactFamily[] = [];
+    while (shuffledBuckets.some((b) => b.length > 0)) {
+      for (const bucket of shuffledBuckets) {
+        if (bucket.length > 0) {
+          result.push(bucket.shift()!);
+        }
+      }
+    }
+    return result;
+  };
+
+  // Hilfsfunktion zur didaktischen Ausbalancierung einer einzelnen Welt
+  const balanceWorld = (facts: FactFamily[], worldNum: number): FactFamily[] => {
+    if (facts.length === 0) return [];
+
+    if (mode === 'mult') {
+      if (worldNum === 1) {
+        // Kernreihen: 2er (Verdoppeln), 5er, 10er, 1er gleichberechtigt mischen!
+        const b2: FactFamily[] = [];
+        const b5: FactFamily[] = [];
+        const b10: FactFamily[] = [];
+        const b1: FactFamily[] = [];
+
+        for (const f of facts) {
+          if (f.a === 2 || f.b === 2) {
+            b2.push(f);
+          } else if (f.a === 5 || f.b === 5) {
+            b5.push(f);
+          } else if (f.a === 10 || f.b === 10) {
+            b10.push(f);
+          } else {
+            b1.push(f);
+          }
+        }
+        return roundRobin([b2, b5, b10, b1]);
+      } else if (worldNum === 2) {
+        // Forscherreihen: 3er und 4er abwechselnd
+        const b3 = facts.filter((f) => f.a === 3 || f.b === 3);
+        const b4 = facts.filter((f) => !b3.includes(f));
+        return roundRobin([b3, b4]);
+      } else {
+        // Königsreihen (6, 7, 8, 9): Bunt gemischt
+        return [...facts].sort(() => Math.random() - 0.5);
+      }
+    } else {
+      // plusminus (Zahlen-Held)
+      if (worldNum === 1) {
+        // Ausgewogener Mix: Verdoppeln, Partner zur 10, Fast-Verdoppeln, Zerlegungen
+        const bDoubles = facts.filter((f) => f.a === f.b);
+        const bTens = facts.filter((f) => f.c === 10 && f.a !== f.b);
+        const bNear = facts.filter((f) => Math.abs(f.a - f.b) === 1);
+        const bRest = facts.filter(
+          (f) => !bDoubles.includes(f) && !bTens.includes(f) && !bNear.includes(f)
+        );
+        return roundRobin([bDoubles, bTens, bNear, bRest]);
+      } else if (worldNum === 2) {
+        // Zehnerbündel (10+x / x+10), Verdoppeln > 10, Fast-Verdoppeln
+        const bTens = facts.filter((f) => f.a === 10 || f.b === 10);
+        const bDoubles = facts.filter((f) => f.a === f.b && !bTens.includes(f));
+        const bRest = facts.filter((f) => !bTens.includes(f) && !bDoubles.includes(f));
+        return roundRobin([bTens, bDoubles, bRest]);
+      } else {
+        // Zehnerübergang: Bunt gemischt
+        return [...facts].sort(() => Math.random() - 0.5);
+      }
+    }
+  };
+
+  const w1 = balanceWorld(unlearnedRaw.filter((f) => getFactWorld(f) === 1), 1);
+  const w2 = balanceWorld(unlearnedRaw.filter((f) => getFactWorld(f) === 2), 2);
+  const w3 = balanceWorld(unlearnedRaw.filter((f) => getFactWorld(f) === 3), 3);
+
+  if (freeWorldChoice) {
+    // Bei freier Weltenwahl: Round-Robin über alle 3 Welten
+    return roundRobin([w1, w2, w3]);
+  }
+
+  // Didaktischer Standard-Pfad: Erst Welt 1 meistern, dann Welt 2, dann Welt 3
+  return [...w1, ...w2, ...w3];
+}
+
+/**
  * Erstellt die Tages-Mission (Daily Session Queue):
  * - Beachtet den didaktischen Welten-Schutz: Neue Fakten kommen NUR aus freigeschalteten Welten!
  * - Mischt fällige Wiederholungen (max. 60%) mit neuen Fakten (30%) und Festigung (10%).
@@ -263,42 +365,11 @@ export function buildDailySessionQueueV3(
       return a.dueDate - b.dueDate;
     });
 
-  // 2. Neue ungelernte Fakten – STRENG GEFILTERT auf die aktuell freigeschalteten Welten!
+  // 2. Neue ungelernte Fakten – STRENG GEFILTERT auf die freigeschalteten Welten und didaktisch ausbalanciert!
   const unlearnedRaw = facts
     .filter((f) => f.totalAttempts === 0 && accessibleIds.has(f.id));
 
-  let unlearned: FactFamily[];
-  if (freeWorldChoice) {
-    // Bei freier Weltenwahl: Round-Robin Mischung aus allen 3 Welten,
-    // damit nicht erst alle 45/64 einfachen Aufgaben von Welt 1 abgearbeitet werden müssen!
-    const u1 = unlearnedRaw.filter((f) => getFactWorld(f) === 1).sort(() => Math.random() - 0.5);
-    const u2 = unlearnedRaw.filter((f) => getFactWorld(f) === 2).sort(() => Math.random() - 0.5);
-    const u3 = unlearnedRaw.filter((f) => getFactWorld(f) === 3).sort(() => Math.random() - 0.5);
-    unlearned = [];
-    while (u1.length > 0 || u2.length > 0 || u3.length > 0) {
-      if (u1.length > 0) unlearned.push(u1.shift()!);
-      if (u2.length > 0) unlearned.push(u2.shift()!);
-      if (u3.length > 0) unlearned.push(u3.shift()!);
-    }
-  } else {
-    unlearned = [...unlearnedRaw].sort((a, b) => {
-      // Zerlegungen und Kernreihen zuerst (didaktischer Stufenaufbau)
-      const getPrio = (f: FactFamily) => {
-        if (f.mode === 'plusminus') {
-          if (f.c <= 6) return 1;
-          if (f.c === 10) return 2;
-          if (f.c <= 10) return 3;
-          if (f.a === f.b) return 4;
-          return 5;
-        }
-        if (f.strategy === 'core_1_10') return 1;
-        if (f.strategy === 'core_2_5') return 2;
-        if (f.strategy === 'squares') return 3;
-        return 4;
-      };
-      return getPrio(a) - getPrio(b);
-    });
-  }
+  const unlearned = orderUnlearnedFactsV3(unlearnedRaw, mode, freeWorldChoice);
 
   // 3. Zukünftige Festigungs-Fakten (nur aus freigeschalteten Welten)
   const upcoming = facts

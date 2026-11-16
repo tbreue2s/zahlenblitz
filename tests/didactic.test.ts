@@ -170,6 +170,17 @@ const { accessibleFacts: freshAccessible, unlockedWorldCount: freshCount } =
   getAccessibleFactsPoolV3(freshMultFacts, 'mult');
 assert.strictEqual(freshCount, 1, 'Bei ungespieltem Stand darf nur Welt 1 freigeschaltet sein');
 
+// Prüfe: Erste Runde an Tag 1 muss einen ausgewogenen Mix aus 2er, 5er, 10er und 1er Reihe enthalten!
+const firstQueue = buildDailySessionQueueV3(freshMultFacts, 10);
+assert.strictEqual(firstQueue.length, 10, 'Queue muss 10 Aufgaben haben');
+const has2InFirst = firstQueue.some((t) => t.fact.a === 2 || t.fact.b === 2);
+const has5InFirst = firstQueue.some((t) => t.fact.a === 5 || t.fact.b === 5);
+const has10InFirst = firstQueue.some((t) => t.fact.a === 10 || t.fact.b === 10);
+const has1InFirst = firstQueue.some((t) => t.fact.a === 1 || t.fact.b === 1);
+assert.ok(has2InFirst, 'In der ersten Runde Welt 1 MUSS die 2er-Reihe (Verdoppeln) vertreten sein');
+assert.ok(has5InFirst, 'In der ersten Runde Welt 1 MUSS die 5er-Reihe vertreten sein');
+assert.ok(has10InFirst || has1InFirst, 'In der ersten Runde Welt 1 MUSS auch die 10er- oder 1er-Reihe vertreten sein');
+
 // Mehrfache Tages-Missionen an Tag 1 simulieren
 for (let round = 0; round < 5; round++) {
   const queue = buildDailySessionQueueV3(freshMultFacts, 10);
