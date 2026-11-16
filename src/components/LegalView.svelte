@@ -50,7 +50,32 @@
       Diese Anwendung wurde nach dem Prinzip der Datensparsamkeit und des „Privacy by Design“ entwickelt. Die Nutzung der Lern-App ist vollständig ohne Registrierung, ohne Angabe personenbezogener Daten und ohne Erstellung eines Benutzerkontos möglich.
     </p>
 
-    <h4>3. Hosting und Bereitstellung über GitHub Pages</h4>
+    <h4>3. Besonderer Schutz von Kindern (Keine Erfassung von Kinderdaten)</h4>
+    <p>
+      Der Schutz der Privatsphäre von Kindern hat für uns höchste Priorität. Diese Lern-App richtet sich speziell an Kinder im Grundschulalter (1. bis 3. Klasse) sowie an deren Eltern und Lehrkräfte.
+    </p>
+    <p>
+      <strong>Wir erheben, verarbeiten und speichern zu keinem Zeitpunkt personenbezogene Daten von Kindern.</strong>
+    </p>
+    <ul>
+      <li>
+        <strong>Keine Registrierung &amp; keine Identifikation:</strong> Die App kann vollständig anonym genutzt werden. Es werden weder Klarnamen, Geburtsdaten, E-Mail-Adressen noch sonstige Kontaktdaten abgefragt oder gespeichert.
+      </li>
+      <li>
+        <strong>Freie Fantasienamen:</strong> Für Lernprofile können beliebige Spitz- oder Fantasienamen (z.&nbsp;B. „Zahlenfuchs“) und Emojis gewählt werden. Es ist weder erforderlich noch vorgesehen, echte Personennamen einzugeben.
+      </li>
+      <li>
+        <strong>100&nbsp;% lokale Speicherung:</strong> Alle Lernstände, Rechenzeiten, erreichte Sterne und freigeschaltete Sticker verbleiben ausschließlich lokal im Speicher des Browsers (<code>localStorage</code>) auf dem Endgerät der Familie und werden niemals an Server oder Dritte übertragen.
+      </li>
+      <li>
+        <strong>Kein Profiling, kein Tracking, keine Werbe-IDs:</strong> Es findet keinerlei Verhaltensbeobachtung, Werbetracking oder Weitergabe an Werbenetzwerke oder Analyseanbieter statt.
+      </li>
+      <li>
+        <strong>Kindersicherung (Parental Gate):</strong> Einstellungen mit Elternbezug (wie das Sichern, Wiederherstellen oder Zurücksetzen von Profilen) sind durch eine mathematische Kindersicherung geschützt, die nur von Erwachsenen gelöst werden kann.
+      </li>
+    </ul>
+
+    <h4>4. Hosting und Bereitstellung über GitHub Pages</h4>
     <p>
       Diese Progressive Web App (PWA) wird als statische Webseite über den Dienst GitHub Pages bereitgestellt.
     </p>
@@ -77,7 +102,7 @@
       GitHub, Inc. ist unter dem EU-U.S. Data Privacy Framework (DPF) zertifiziert. Für Datenübermittlungen in die USA gilt damit ein angemessenes Datenschutzniveau.
     </p>
 
-    <h4>4. Lokale Speicherung auf dem Endgerät (LocalStorage &amp; Cache)</h4>
+    <h4>5. Lokale Speicherung auf dem Endgerät (LocalStorage &amp; Cache)</h4>
     <p>
       Die App arbeitet clientseitig direkt im Browser deines Endgeräts.
     </p>
@@ -94,12 +119,12 @@
       Du kannst diese Daten jederzeit selbstständig löschen, indem du in den Browsereinstellungen die Website-Daten für diese App entfernst oder die PWA deinstallierst.
     </p>
 
-    <h4>5. Service Worker &amp; Offline-Funktionalität</h4>
+    <h4>6. Service Worker &amp; Offline-Funktionalität</h4>
     <p>
       Um die App auch ohne aktive Internetverbindung lauffähig zu machen, nutzt sie einen Service Worker. Dieser lädt die technischen Programmdateien (HTML, JavaScript, CSS) in den browserinternen Cache deines Endgeräts. Dabei werden keine personenbezogenen Nutzerdaten erfasst oder ausgewertet.
     </p>
 
-    <h4>6. Keine Cookies, kein Tracking, keine Werbung</h4>
+    <h4>7. Keine Cookies, kein Tracking, keine Werbung</h4>
     <ul>
       <li>
         <strong>Cookies:</strong> Diese Anwendung verwendet keine zustimmungspflichtigen Tracking-, Analyse- oder Marketing-Cookies.
@@ -112,12 +137,12 @@
       </li>
     </ul>
 
-    <h4>7. Audio-Ausgabe (Web Audio API)</h4>
+    <h4>8. Audio-Ausgabe (Web Audio API)</h4>
     <p>
       Die akustischen Signaltöne bei richtiger oder falscher Antwort werden prozedural und in Echtzeit lokal über die Standard-Audio-Schnittstelle deines Browsers (Web Audio API) berechnet. Es werden keine Audiodaten gestreamt, aufgezeichnet oder nach außen übertragen.
     </p>
 
-    <h4>8. Deine Rechte als betroffene Person</h4>
+    <h4>9. Deine Rechte als betroffene Person</h4>
     <p>
       Soweit im Rahmen der Server-Logs personenbezogene Daten verarbeitet werden, stehen dir nach der DSGVO folgende Rechte gegenüber dem Verantwortlichen zu:
     </p>
