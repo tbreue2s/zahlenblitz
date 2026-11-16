@@ -61,7 +61,7 @@ class ThemeManager {
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', shouldBeDark ? '#0b0f19' : '#ffffff');
+      metaTheme.setAttribute('content', shouldBeDark ? '#000000' : '#f2f3f5');
     }
   }
 }

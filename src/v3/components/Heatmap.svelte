@@ -93,17 +93,17 @@
   let activeB = $derived(hoveredCell?.b ?? selectedFact?.b ?? null);
 </script>
 
-<section class="bg-white dark:bg-[#141b2d] rounded-3xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-700/60 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.05)] dark:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] space-y-2.5" aria-label="10x10 Rechentafel">
+<section class="bg-white dark:bg-[#1c1c1e] rounded-[22px] p-3.5 sm:p-4 border border-black/[0.07] dark:border-white/[0.07] space-y-2.5" aria-label="10x10 Rechentafel">
   <!-- Welten-Auswahl & Legende (alles kompakt auf einer Zeile, ohne horizontales Scrollen) -->
   <div class="flex items-center justify-between gap-1.5 flex-wrap">
-    <div class="flex items-center gap-1.5 text-xs">
+    <div class="flex items-center gap-1 text-xs">
       <button
         type="button"
         onclick={() => handleSelectWorld(0)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer {
+        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer {
           selectedWorldFilter === 0 && selectedRowOrCol === null
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
         }"
       >
         Alle
@@ -112,10 +112,10 @@
       <button
         type="button"
         onclick={() => handleSelectWorld(1)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer {
+        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer {
           selectedWorldFilter === 1
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
         }"
       >
         Welt 1
@@ -124,10 +124,10 @@
       <button
         type="button"
         onclick={() => handleSelectWorld(2)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
+        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 2
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
         }"
       >
         <span>Welt 2</span>
@@ -139,10 +139,10 @@
       <button
         type="button"
         onclick={() => handleSelectWorld(3)}
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl border transition cursor-pointer flex items-center gap-1 {
+        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 {
           selectedWorldFilter === 3
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
         }"
       >
         <span>Welt 3</span>
@@ -156,21 +156,21 @@
     <button
       type="button"
       onclick={() => (showLegendModal = true)}
-      class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/40 px-2 py-1 rounded-xl cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition flex items-center gap-1 shrink-0"
+      class="text-[11px] font-bold text-[#0a6cff] dark:text-[#4c9aff] bg-[#e8f0ff] dark:bg-[#4c9aff]/15 border-none px-2.5 py-1.5 rounded-full cursor-pointer hover:bg-[#d6e5ff] dark:hover:bg-[#4c9aff]/25 transition flex items-center gap-1 shrink-0"
     >
-      <span>ℹ️</span>
+      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
       <span>Legende</span>
     </button>
   </div>
 
   <!-- Didaktischer Erklär-Banner für aktive Welt (bei Klick auf Welt 1, 2 oder 3) -->
   {#if selectedWorldFilter === 1}
-    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
+    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 p-2.5 rounded-2xl border border-[#0a6cff]/25 dark:border-[#4c9aff]/30 animate-fade-in flex items-center gap-2">
       <span class="text-base shrink-0">🥉</span>
       <span><strong>Welt 1 ({gameMode === 'mult' ? 'Kernaufgaben' : 'Basis bis 10'}):</strong> {gameMode === 'mult' ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.' : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.'}</span>
     </div>
   {:else if selectedWorldFilter === 2}
-    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-indigo-50/80 dark:bg-indigo-950/50 p-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 animate-fade-in flex items-center gap-2">
+    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 p-2.5 rounded-2xl border border-[#0a6cff]/25 dark:border-[#4c9aff]/30 animate-fade-in flex items-center gap-2">
       <span class="text-base shrink-0">🥈</span>
       <span><strong>Welt 2 ({gameMode === 'mult' ? 'Forscherreihen' : 'Doppelgänger & Nachbarn'}):</strong> {gameMode === 'mult' ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.' : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.'}</span>
     </div>
@@ -184,12 +184,12 @@
   <!-- 11x11 Matrix Grid (Zahlen oben und links für volle Übersicht) -->
   <div class="w-full overflow-x-auto pb-1">
     <!-- Achsen-Beschriftung zur Orientierung -->
-    <div class="flex items-center justify-between text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold max-w-sm mx-auto px-1.5 pb-1">
-      <span>↓ Zeile (1. Zahl)</span>
-      <span>Spalte (2. Zahl) →</span>
+    <div class="flex items-center justify-between text-[11px] text-[#6b7280] dark:text-[#98989f] font-bold max-w-sm mx-auto px-1.5 pb-1.5">
+      <span>1. Zahl ↓</span>
+      <span>2. Zahl →</span>
     </div>
 
-    <div class="grid grid-cols-11 gap-0.5 sm:gap-1 min-w-[280px] max-w-sm mx-auto p-1.5 sm:p-2 bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl select-none">
+    <div class="grid grid-cols-11 gap-0.5 sm:gap-1 min-w-[280px] max-w-sm mx-auto p-2 bg-[#f6f7f9] dark:bg-[#111113] rounded-[20px] select-none">
       
       <!-- Obere linke Ecke (Operator) -->
       <button
@@ -201,7 +201,7 @@
         }}
         title="Auswahl aufheben (Alle anzeigen)"
         aria-label="Auswahl aufheben"
-        class="aspect-square rounded-md bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-black shadow-sm ring-1 ring-indigo-400 border-none cursor-pointer hover:bg-indigo-500 transition"
+        class="aspect-square rounded-[8px] bg-[#0a6cff] dark:bg-[#4c9aff] dark:text-[#00112b] text-white flex items-center justify-center text-[10px] sm:text-xs font-black border-none cursor-pointer hover:bg-[#2b7fff] transition"
       >
         {gameMode === 'mult' ? '×' : '+'}
       </button>
@@ -214,10 +214,10 @@
           onclick={() => handleToggleRowOrCol(b)}
           title="{b}er-Reihe auswählen & üben"
           aria-label="{b}er-Reihe auswählen"
-          class="aspect-square rounded-md flex items-center justify-center text-[9.5px] sm:text-[11px] font-black transition-all border-none cursor-pointer active:scale-95 {
+          class="aspect-square rounded-[8px] flex items-center justify-center text-[10px] sm:text-[11px] font-extrabold transition-all border-none cursor-pointer active:scale-95 {
             isColActive
-              ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md ring-2 ring-indigo-400 scale-105 z-10'
-              : 'bg-indigo-100/90 dark:bg-indigo-950/70 border border-indigo-300/80 dark:border-indigo-700/80 text-indigo-950 dark:text-indigo-100 shadow-2xs hover:bg-indigo-200 dark:hover:bg-indigo-900'
+              ? 'bg-[#0a6cff] dark:bg-[#4c9aff] dark:text-[#00112b] text-white scale-105 z-10'
+              : 'bg-transparent text-[#9aa1ad] dark:text-[#6c6c74] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-[#0f1115] dark:hover:text-white'
           }"
         >
           {b}
@@ -233,10 +233,10 @@
           onclick={() => handleToggleRowOrCol(a)}
           title="{a}er-Reihe auswählen & üben"
           aria-label="{a}er-Reihe auswählen"
-          class="aspect-square rounded-md flex items-center justify-center text-[9.5px] sm:text-[11px] font-black transition-all border-none cursor-pointer active:scale-95 {
+          class="aspect-square rounded-[8px] flex items-center justify-center text-[10px] sm:text-[11px] font-extrabold transition-all border-none cursor-pointer active:scale-95 {
             isRowActive
-              ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md ring-2 ring-indigo-400 scale-105 z-10'
-              : 'bg-indigo-100/90 dark:bg-indigo-950/70 border border-indigo-300/80 dark:border-indigo-700/80 text-indigo-950 dark:text-indigo-100 shadow-2xs hover:bg-indigo-200 dark:hover:bg-indigo-900'
+              ? 'bg-[#0a6cff] dark:bg-[#4c9aff] dark:text-[#00112b] text-white scale-105 z-10'
+              : 'bg-transparent text-[#9aa1ad] dark:text-[#6c6c74] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-[#0f1115] dark:hover:text-white'
           }"
         >
           {a}
@@ -269,15 +269,15 @@
             }}
             onmouseenter={() => (hoveredCell = { a, b })}
             onmouseleave={() => (hoveredCell = null)}
-            class="relative aspect-square rounded-md transition-all cursor-pointer border-none p-0 flex items-center justify-center text-[8px] sm:text-[9.5px] font-black {
+            class="relative aspect-square rounded-[8px] transition-all cursor-pointer border-none p-0 flex items-center justify-center text-[8px] sm:text-[9.5px] font-black {
               isDimmed
                 ? 'opacity-20 grayscale brightness-75 scale-90'
                 : 'hover:scale-115 hover:z-20'
             } {
               isSelected
-                ? 'ring-2 ring-indigo-500 scale-110 z-10'
+                ? 'ring-2 ring-[#0a6cff] scale-110 z-10'
                 : isInSelectedRow
-                ? 'ring-1.5 ring-indigo-400/90 scale-102 z-10'
+                ? 'ring-1.5 ring-[#0a6cff] scale-102 z-10'
                 : ''
             } {
               locked
@@ -295,8 +295,8 @@
                 : vis.level === 'learning'
                 ? 'bg-amber-300 dark:bg-amber-400 text-amber-950 dark:text-amber-950'
                 : isInCrosshair
-                ? 'bg-indigo-100/70 dark:bg-slate-700 text-indigo-900 dark:text-indigo-200'
-                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-[#e8f0ff] dark:bg-slate-700 text-[#0f1115] dark:text-white'
+                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-black/[0.07] dark:ring-white/[0.06] hover:bg-slate-200 dark:hover:bg-slate-700'
             }"
             title="{a} {gameMode === 'mult' ? '×' : '+'} {b} = {fact?.c} ({locked ? 'Gesperrt' : `${vis.badge} ${vis.label}`})"
             aria-label="{a} {gameMode === 'mult' ? 'mal' : 'plus'} {b} ist {fact?.c}"
@@ -323,9 +323,9 @@
   {#if selectedFact}
     <!-- 1. Einzelfakt ausgewählt -->
     {@const vis = getFactVisualStatus(selectedFact)}
-    <div class="mt-2.5 p-2.5 sm:p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-2 animate-fade-in shadow-2xs">
+    <div class="mt-2.5 p-2.5 sm:p-3 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 rounded-2xl border border-[#0a6cff]/25 dark:border-[#4c9aff]/30 flex items-center justify-between gap-2 animate-fade-in shadow-2xs">
       <div class="truncate">
-        <div class="text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5">
+        <div class="text-xs sm:text-sm font-black text-[#0f1115] dark:text-white flex items-center gap-1.5">
           <span>{selectedFact.a} {selectedFact.mode === 'mult' ? '×' : '+'} {selectedFact.b} = {selectedFact.c}</span>
           {#if vis.hasCrown}
             <span>👑</span>
@@ -339,7 +339,7 @@
             <span>{vis.badge}</span>
           {/if}
         </div>
-        <div class="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold truncate">
+        <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
           <span>{vis.label}</span> · <span>{vis.shortDesc}</span>
         </div>
       </div>
@@ -351,7 +351,7 @@
             selectedFact = null;
             if (f) onPracticeFact(f);
           }}
-          class="shrink-0 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black border-none cursor-pointer shadow-xs transition"
+          class="shrink-0 px-3 py-1.5 rounded-xl bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black border-none cursor-pointer shadow-xs transition"
         >
           🎯 Gezielt üben →
         </button>
@@ -359,13 +359,13 @@
     </div>
   {:else if selectedRowOrCol !== null}
     <!-- 2. Reihe ausgewählt (z. B. 7er-Reihe) -->
-    <div class="mt-2.5 p-2.5 sm:p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl border-2 border-indigo-300 dark:border-indigo-700/80 flex items-center justify-between gap-2 animate-fade-in shadow-sm">
+    <div class="mt-2.5 p-2.5 sm:p-3 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 rounded-2xl border-2 border-[#0a6cff]/25 dark:border-[#4c9aff]/30 flex items-center justify-between gap-2 animate-fade-in shadow-sm">
       <div class="truncate min-w-0">
-        <div class="text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5 truncate">
+        <div class="text-xs sm:text-sm font-black text-[#0f1115] dark:text-white flex items-center gap-1.5 truncate">
           <span>🎯</span>
           <span>{selectedRowOrCol}er-Reihe ({gameMode === 'mult' ? `Einmaleins mit ${selectedRowOrCol}` : `Rechnen mit ${selectedRowOrCol}`})</span>
         </div>
-        <div class="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold truncate">
+        <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
           10 Aufgaben gezielt aus der {selectedRowOrCol}er-Reihe trainieren
         </div>
       </div>
@@ -378,7 +378,7 @@
               onStartRowSession(row);
             }
           }}
-          class="shrink-0 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-black border-none cursor-pointer shadow-sm transition flex items-center gap-1.5 tactile-btn"
+          class="shrink-0 px-3.5 py-2 rounded-xl bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black border-none cursor-pointer shadow-sm transition flex items-center gap-1.5 tactile-btn"
         >
           <span>▶</span>
           <span>Reihe üben</span>
@@ -390,16 +390,16 @@
     {@const activeChapter = chapters[selectedWorldFilter - 1]}
     {@const isLocked = selectedWorldFilter > unlockedWorldCount}
     {#if activeChapter}
-      <div class="mt-2.5 p-2.5 sm:p-3 bg-indigo-50/90 dark:bg-indigo-950/60 rounded-2xl border-2 border-indigo-300 dark:border-indigo-700/80 flex items-center justify-between gap-2 animate-fade-in shadow-sm">
+      <div class="mt-2.5 p-2.5 sm:p-3 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 rounded-2xl border-2 border-[#0a6cff]/25 dark:border-[#4c9aff]/30 flex items-center justify-between gap-2 animate-fade-in shadow-sm">
         <div class="truncate min-w-0">
-          <div class="text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5 truncate">
+          <div class="text-xs sm:text-sm font-black text-[#0f1115] dark:text-white flex items-center gap-1.5 truncate">
             <span class="text-base">{activeChapter.icon}</span>
             <span>{activeChapter.title}</span>
             {#if isLocked}
               <span class="text-xs">🔒</span>
             {/if}
           </div>
-          <div class="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold truncate">
+          <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
             {activeChapter.subtitle} · {activeChapter.statusText}
           </div>
         </div>
@@ -420,7 +420,7 @@
               onclick={() => {
                 onStartChapterSession(activeChapter);
               }}
-              class="shrink-0 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-black border-none cursor-pointer shadow-sm transition flex items-center gap-1.5 tactile-btn"
+              class="shrink-0 px-3.5 py-2 rounded-xl bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black border-none cursor-pointer shadow-sm transition flex items-center gap-1.5 tactile-btn"
             >
               <span>▶</span>
               <span>Welt {selectedWorldFilter} üben</span>
@@ -448,8 +448,8 @@
     aria-modal="true"
     aria-label="Aufgabe gesperrt"
   >
-    <div class="w-full max-w-sm bg-white dark:bg-[#141b2d] border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-5 shadow-2xl space-y-3.5 animate-scale-up text-center">
-      <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-2xl flex items-center justify-center mx-auto shadow-2xs">
+    <div class="w-full max-w-sm bg-white dark:bg-[#1c1c1e] border-2 border-[#0a6cff]/25 dark:border-[#4c9aff]/30 rounded-3xl p-5 shadow-2xl space-y-3.5 animate-scale-up text-center">
+      <div class="w-12 h-12 rounded-2xl bg-[#e8f0ff] dark:bg-[#4c9aff]/15 text-[#0a6cff] dark:text-[#4c9aff] text-2xl flex items-center justify-center mx-auto shadow-2xs">
         🔒
       </div>
       <div>
@@ -463,7 +463,7 @@
       <button
         type="button"
         onclick={() => (lockedPromptFact = null)}
-        class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl border-none cursor-pointer shadow-xs"
+        class="w-full py-2.5 px-4 bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black rounded-xl border-none cursor-pointer shadow-xs"
       >
         Verstanden ✓
       </button>
@@ -486,7 +486,7 @@
     aria-modal="true"
     aria-label="Farb-Legende"
   >
-    <div class="w-full max-w-md bg-white dark:bg-[#141b2d] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
+    <div class="w-full max-w-md bg-white dark:bg-[#1c1c1e] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 class="text-base font-extrabold text-slate-900 dark:text-white m-0">
