@@ -7,7 +7,12 @@ import {
   generatePlusMinusFacts,
   selectTaskVariant,
 } from '../src/v3/lib/generator';
-import { getWorldChaptersV3 } from '../src/v3/lib/chapters';
+import {
+  buildChapterSessionQueueV3,
+  getAccessibleFactsPoolV3,
+  getFactWorld,
+  getWorldChaptersV3,
+} from '../src/v3/lib/chapters';
 import { applySM2ToFact, evaluateResponseQuality, getFactVisualStatus, isDigitReversal } from '../src/v3/lib/sm2';
 import type { FactFamily } from '../src/v3/lib/types';
 
@@ -66,49 +71,84 @@ assert.strictEqual(ch3Facts.length, 24, 'Welt 3 muss exakt 24 Fakten enthalten')
 assert.strictEqual(ch1Facts.length + ch2Facts.length + ch3Facts.length, 100, 'Alle 100 Fakten müssen abgedeckt sein');
 console.log('✓ Test 2 bestanden: Alle 100 Fakten lückenlos in den 3 Rechenwelten.');
 
-// --- TEST 3: Varianten-Auswahl & Didaktische Stufen ---
-const newFact: FactFamily = { ...pmFacts[0], repetitions: 0 };
-for (let i = 0; i < 500; i++) {
-  const v = selectTaskVariant(newFact);
-  assert.strictEqual(v, 'add', 'Bei repetitions === 0 muss immer die Grundaufgabe add kommen');
+// --- TEST 3: Explizite Rechenart-Auswahl & Kindgerechte Lückenaufgaben ---
+const masteredPmFact: FactFamily = {
+  ...pmFacts[0],
+  repetitions: 10,
+  masteredVariants: ['add'],
+};
+for (let i = 0; i < 100; i++) {
+  assert.strictEqual(
+    selectTaskVariant(masteredPmFact),
+    'add',
+    'Default selectTaskVariant muss immer add liefern (kein automatisches Eskalieren!)'
+  );
+  assert.strictEqual(
+    selectTaskVariant(masteredPmFact, 'base'),
+    'add',
+    'Bei operation=base muss selbst bei repetitions=10 immer add kommen'
+  );
+  assert.strictEqual(
+    selectTaskVariant({ ...pmFacts[0], repetitions: 0 }, 'inverse'),
+    'sub',
+    'Bei operation=inverse muss auch bei repetitions=0 direkt sub kommen'
+  );
+  const gapPm = selectTaskVariant(masteredPmFact, 'gap');
+  assert.strictEqual(
+    gapPm,
+    'gap_add_b',
+    `Bei operation=gap darf NUR gap_add_b kommen (keine Minus-Lücken!), erhalten: ${gapPm}`
+  );
+  const task = formatEquationPartsV3(masteredPmFact, gapPm);
+  assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
 }
 
-const learnedFact: FactFamily = { ...pmFacts[0], repetitions: 1 };
-let sawAdd = false;
-let sawSub = false;
+let sawMixAdd = false;
+let sawMixSub = false;
 for (let i = 0; i < 500; i++) {
-  const v = selectTaskVariant(learnedFact);
-  if (v === 'add') sawAdd = true;
-  if (v === 'sub') sawSub = true;
+  const v = selectTaskVariant(masteredPmFact, 'mix');
+  assert.ok(v === 'add' || v === 'sub', `Bei mix darf niemals eine Lückenaufgabe kommen: ${v}`);
+  if (v === 'add') sawMixAdd = true;
+  if (v === 'sub') sawMixSub = true;
 }
-assert.ok(sawAdd && sawSub, 'Bei repetitions === 1 müssen Grund- und Umkehraufgaben vorkommen');
+assert.ok(sawMixAdd && sawMixSub, 'Bei mix müssen add und sub vorkommen');
 
-const masteredFact: FactFamily = { ...pmFacts[0], repetitions: 3, masteredVariants: [] };
-let sawGap = false;
-for (let i = 0; i < 500; i++) {
-  const v = selectTaskVariant(masteredFact);
-  if (v.startsWith('gap_')) {
-    sawGap = true;
-    assert.ok(v === 'gap_add_b' || v === 'gap_sub_b', `Nur standardisierte PlusMinus-Lücken erlaubt: ${v}`);
-    const task = formatEquationPartsV3(masteredFact, v);
-    assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
-  }
+const masteredMultFact: FactFamily = {
+  ...multFacts[0],
+  repetitions: 10,
+  masteredVariants: ['mult'],
+};
+for (let i = 0; i < 100; i++) {
+  assert.strictEqual(
+    selectTaskVariant(masteredMultFact, 'base'),
+    'mult',
+    'Bei 1x1 operation=base muss immer mult kommen'
+  );
+  assert.strictEqual(
+    selectTaskVariant({ ...multFacts[0], repetitions: 0 }, 'inverse'),
+    'div',
+    'Bei 1x1 operation=inverse muss immer div kommen'
+  );
+  const gapMult = selectTaskVariant(masteredMultFact, 'gap');
+  assert.strictEqual(
+    gapMult,
+    'gap_mult_b',
+    `Bei 1x1 operation=gap darf NUR gap_mult_b kommen (keine Geteilt-Lücken!), erhalten: ${gapMult}`
+  );
+  const task = formatEquationPartsV3(masteredMultFact, gapMult);
+  assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
 }
-assert.ok(sawGap, 'Bei repetitions >= 2 müssen auch Lückenaufgaben vorkommen');
 
-const masteredMultFact: FactFamily = { ...multFacts[0], repetitions: 3, masteredVariants: [] };
-let sawMultGap = false;
+let sawMixMult = false;
+let sawMixDiv = false;
 for (let i = 0; i < 500; i++) {
-  const v = selectTaskVariant(masteredMultFact);
-  if (v.startsWith('gap_')) {
-    sawMultGap = true;
-    assert.ok(v === 'gap_mult_b' || v === 'gap_div_a', `Nur standardisierte 1x1-Lücken erlaubt: ${v}`);
-    const task = formatEquationPartsV3(masteredMultFact, v);
-    assert.ok(!task.prompt.startsWith('?'), `Prompt darf nicht mit ? beginnen: ${task.prompt}`);
-  }
+  const v = selectTaskVariant(masteredMultFact, 'mix');
+  assert.ok(v === 'mult' || v === 'div', `Bei 1x1 mix darf niemals eine Lücke kommen: ${v}`);
+  if (v === 'mult') sawMixMult = true;
+  if (v === 'div') sawMixDiv = true;
 }
-assert.ok(sawMultGap, 'Bei repetitions >= 2 müssen auch 1x1-Lückenaufgaben vorkommen');
-console.log('✓ Test 3 bestanden: Varianten-Auswahl schützt vor Überforderung und alle Lückenaufgaben folgen strikt Zahl [Op] ? = Zahl.');
+assert.ok(sawMixMult && sawMixDiv, 'Bei 1x1 mix müssen mult und div vorkommen');
+console.log('✓ Test 3 bestanden: Explizite Rechenart-Auswahl verhindert Überforderung, Lücken sind strikt Zahl +/?/× ? = Zahl ohne Minus-Lücken.');
 
 // --- TEST 4: SM-2 Engine & Differenzierte Zeitfenster (1x1: 4s vs. PlusMinus: 5s) ---
 // 1x1 Meister (mult)
@@ -162,7 +202,6 @@ import {
   buildWeakSpotsSessionQueueV3,
   buildBlitzChallengeQueueV3,
 } from '../src/v3/lib/storage';
-import { getAccessibleFactsPoolV3 } from '../src/v3/lib/chapters';
 
 // Frischer Fakten-Satz: Keine Welt freigespielt (nur Welt 1 aktiv)
 const freshMultFacts = generateMultFacts();
@@ -229,7 +268,84 @@ for (const item of row5PMQueue) {
   assert.ok(item.fact.a === 5 || item.fact.b === 5, `Jede Aufgabe der 5er-Reihe muss a=5 oder b=5 enthalten: ${item.fact.a}+${item.fact.b}`);
 }
 
-console.log('✓ Test 5 bestanden: Welten-Schutz, Geteilt-Schutz, freie Weltenwahl und gezieltes Reihen-Training funktionieren.');
+// Prüfe: Welt 1 vollständig gemeistert (Welt 2 ist freigeschaltet), inkl. fälliger Fakten in Welt 2/3!
+// Trotz freigeschalteter Welt 2 darf worldScope=1 + operation='base' Weder Welt 2/3 leaken noch Minus/Lücken aufzwingen!
+const pmWorld1Mastered = generatePlusMinusFacts().map((f) => {
+  const w = getFactWorld(f);
+  if (w === 1) {
+    return {
+      ...f,
+      totalAttempts: 4,
+      correctAttempts: 4,
+      repetitions: 3,
+      interval: 6,
+      dueDate: Date.now() + 86400000,
+      lastQuality: 4 as const,
+      masteredVariants: ['add' as const],
+    };
+  }
+  // Fällige Fakten in Welt 2/3 simulieren (z. B. nach vorherigem Testlauf)
+  return {
+    ...f,
+    totalAttempts: 2,
+    correctAttempts: 1,
+    repetitions: 0,
+    dueDate: Date.now() - 1000,
+    lastQuality: 0 as const,
+    masteredVariants: [],
+  };
+});
+
+const { unlockedWorldCount: pmUnlocked } = getAccessibleFactsPoolV3(pmWorld1Mastered, 'plusminus');
+assert.strictEqual(pmUnlocked, 2, 'Nach Welt 1 Hellgrün muss Welt 2 freigeschaltet sein');
+
+const stayInWorld1Queue = buildDailySessionQueueV3(pmWorld1Mastered, 10, Date.now(), false, 'base', 1);
+assert.strictEqual(stayInWorld1Queue.length, 10, 'Stay-in-World-1 Queue muss 10 Aufgaben liefern');
+for (const item of stayInWorld1Queue) {
+  assert.strictEqual(getFactWorld(item.fact), 1, `Welt 1 darf keine Welt-2/3-Aufgaben (auch nicht fällige) mischen: ${item.fact.id}`);
+  assert.strictEqual(item.variant, 'add', `Bei operation=base muss strikt add kommen, erhalten: ${item.variant}`);
+}
+
+const optInWorld2Queue = buildDailySessionQueueV3(pmWorld1Mastered, 10, Date.now(), false, 'base', 2);
+assert.strictEqual(optInWorld2Queue.length, 10, 'Opt-in Welt 2 Queue muss 10 Aufgaben liefern');
+for (const item of optInWorld2Queue) {
+  assert.strictEqual(getFactWorld(item.fact), 2, `Bei worldScope=2 dürfen nur Welt-2-Fakten kommen: ${item.fact.id}`);
+  assert.strictEqual(item.variant, 'add', `Bei operation=base in Welt 2 muss strikt add kommen: ${item.variant}`);
+}
+
+// Clamping-Schutz: Wenn Welt 3 gesperrt ist (freshMultFacts -> unlockedWorldCount === 1), clampt worldScope=3 sicher auf Welt 1
+const clampedQueue = buildDailySessionQueueV3(freshMultFacts, 10, Date.now(), false, 'base', 3);
+for (const item of clampedQueue) {
+  assert.strictEqual(getFactWorld(item.fact), 1, `Gesperrte Welt 3 muss auf Welt 1 geclampt werden: ${item.fact.id}`);
+}
+
+// Minus-Modus auf Basis gemeisterter Plus-Fakten: bevorzugt Fakten ohne 'sub' in masteredVariants und liefert strikt 'sub'
+const inverseQueue = buildDailySessionQueueV3(pmWorld1Mastered, 10, Date.now(), false, 'inverse', 1);
+assert.strictEqual(inverseQueue.length, 10);
+for (const item of inverseQueue) {
+  assert.strictEqual(getFactWorld(item.fact), 1);
+  assert.strictEqual(item.variant, 'sub', `Bei operation=inverse muss strikt sub kommen: ${item.variant}`);
+}
+
+// Kapitel-, Reihen-, Wackelkandidaten- und Blitz-Queue dürfen ebenfalls NICHT eskalieren bei operation='base'
+const pmChaptersFull = getWorldChaptersV3(
+  pmWorld1Mastered.map((f) =>
+    getFactWorld(f) === 1 ? { ...f, masteredVariants: ['add', 'sub', 'gap_add_b'] } : f
+  ),
+  'plusminus'
+);
+assert.ok(pmChaptersFull[0].stars >= 2, 'Welt 1 Kapitel hat hier mindestens 2 Sterne');
+const chapterBaseQueue = buildChapterSessionQueueV3(pmChaptersFull[0], 10, 'base');
+for (const item of chapterBaseQueue) {
+  assert.strictEqual(item.variant, 'add', 'buildChapterSessionQueueV3 darf trotz Sternen bei operation=base nur add liefern');
+}
+
+const rowBaseQueue = buildRowSessionQueueV3(pmWorld1Mastered, 5, 10, 'base');
+for (const item of rowBaseQueue) {
+  assert.strictEqual(item.variant, 'add', 'buildRowSessionQueueV3 darf bei operation=base nur add liefern');
+}
+
+console.log('✓ Test 5 bestanden: Welten-Isolation, explizite Rechenart-Treue, freie Weltenwahl & Reihen-Training funktionieren.');
 
 // --- TEST 6: Wackelkandidaten & 60s Blitz-Challenge ---
 const factsWithFlaws = generateMultFacts().map((f, i) => {
@@ -243,12 +359,19 @@ const weakSpots = getWeakSpotFactsV3(factsWithFlaws);
 assert.ok(weakSpots.length >= 3, 'Mindestens 3 Wackelkandidaten müssen erkannt werden');
 assert.strictEqual(weakSpots[0].id, factsWithFlaws[0].id, 'Akuter Fehler muss an Position 1 stehen');
 
-const weakQueue = buildWeakSpotsSessionQueueV3(factsWithFlaws, 10);
+const weakQueue = buildWeakSpotsSessionQueueV3(factsWithFlaws, 10, 'base');
 assert.strictEqual(weakQueue.length, 10, 'Wackelkandidaten-Queue muss 10 Aufgaben liefern');
+for (const item of weakQueue) {
+  assert.strictEqual(item.variant, 'mult', 'Wackelkandidaten mit operation=base liefern nur mult');
+}
 
-const blitzQueue = buildBlitzChallengeQueueV3(factsWithFlaws, 60);
+const blitzQueue = buildBlitzChallengeQueueV3(factsWithFlaws, 60, false, 'base', 1);
 assert.strictEqual(blitzQueue.length, 60, 'Blitz-Queue muss 60 Aufgaben für den 60s Sprint liefern');
-console.log('✓ Test 6 bestanden: Wackelkandidaten-Trainer & 60s Blitz-Challenge funktionieren fehlerfrei.');
+for (const item of blitzQueue) {
+  assert.strictEqual(getFactWorld(item.fact), 1, 'Blitz mit worldScope=1 bleibt strikt in Welt 1');
+  assert.strictEqual(item.variant, 'mult', 'Blitz mit operation=base liefert nur mult');
+}
+console.log('✓ Test 6 bestanden: Wackelkandidaten-Trainer & 60s Blitz-Challenge respektieren Rechenart & Welt.');
 
 // --- TEST 7: Farbmetrik & Visueller Status (3 Grün-Stufen, 2 Rot-Stufen, Krone) ---
 const baseFact = multFacts[0]; // 1x1=1

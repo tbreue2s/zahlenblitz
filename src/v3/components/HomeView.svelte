@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { playSuccessSound } from '../lib/audio';
+  import { playKeyTap, playSuccessSound } from '../lib/audio';
   import type { WorldChapterV3 } from '../lib/chapters';
   import { ALL_STICKERS } from '../lib/stickers';
   import {
@@ -7,7 +7,14 @@
     getProfileDefaultAvatar,
     getWeakSpotFactsV3,
   } from '../lib/storage';
-  import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
+  import type {
+    FactFamily,
+    GameMode,
+    PracticeOperation,
+    PracticeWorldScope,
+    UserProfileV3,
+    UserStatsV3,
+  } from '../lib/types';
   import ParentalGateModal from './ParentalGateModal.svelte';
   import Heatmap from './Heatmap.svelte';
   import StickerModal from './StickerModal.svelte';
@@ -15,13 +22,20 @@
   interface Props {
     gameMode: GameMode;
     facts: FactFamily[];
+    scopedFacts?: FactFamily[];
     stats: UserStatsV3;
     activeProfile: UserProfileV3;
     profiles: UserProfileV3[];
     soundEnabled: boolean;
     highlightStars?: boolean;
+    practiceOperation?: PracticeOperation;
+    effectiveWorldScope?: PracticeWorldScope;
+    unlockedWorldCount?: number;
     onAcknowledgeStars?: () => void;
     onSwitchGameMode: (mode: GameMode) => void;
+    onSelectOperation?: (op: PracticeOperation) => void;
+    onSelectWorldScope?: (scope: PracticeWorldScope) => void;
+    onAcknowledgeWorldUnlock?: (worldNum: number) => void;
     onSelectProfile: (id: string) => void;
     onToggleSound: () => void;
     onStartDailySession: () => void;
@@ -43,13 +57,20 @@
   let {
     gameMode,
     facts,
+    scopedFacts,
     stats,
     activeProfile,
     profiles,
     soundEnabled,
     highlightStars = false,
+    practiceOperation = 'base',
+    effectiveWorldScope = 1,
+    unlockedWorldCount = 1,
     onAcknowledgeStars,
     onSwitchGameMode,
+    onSelectOperation,
+    onSelectWorldScope,
+    onAcknowledgeWorldUnlock,
     onSelectProfile,
     onToggleSound,
     onStartDailySession,
@@ -63,8 +84,9 @@
     onSaveStickers,
   }: Props = $props();
 
-  let dueCount = $derived(countDueFactsV3(facts));
-  let weakSpotCount = $derived(getWeakSpotFactsV3(facts).length);
+  let activeFactsScope = $derived(scopedFacts ?? facts);
+  let dueCount = $derived(countDueFactsV3(activeFactsScope));
+  let weakSpotCount = $derived(getWeakSpotFactsV3(activeFactsScope).length);
   let canAffordNewSticker = $derived.by(() => {
     const unlocked = new Set(activeProfile.unlockedStickers ?? []);
     return ALL_STICKERS.some((s) => !unlocked.has(s.id) && stats.stars >= s.cost);
@@ -75,6 +97,53 @@
   let showParentalGate = $state(false);
   let showStickerModal = $state(false);
   let showNoWeakSpotsModal = $state(false);
+  let lockedWorldNotice = $state<number | null>(null);
+
+  let showUnlockBanner = $derived(
+    !(activeProfile.freeWorldChoice ?? false) &&
+      unlockedWorldCount > 1 &&
+      (stats.acknowledgedUnlockedWorld ?? 1) < unlockedWorldCount &&
+      effectiveWorldScope !== unlockedWorldCount &&
+      effectiveWorldScope !== 'all'
+  );
+
+  let operationOptions = $derived<
+    { id: PracticeOperation; icon: string; label: string; fullLabel: string }[]
+  >(
+    gameMode === 'mult'
+      ? [
+          { id: 'base', icon: '✖️', label: 'Mal', fullLabel: 'Nur Mal' },
+          { id: 'inverse', icon: '➗', label: 'Geteilt', fullLabel: 'Nur Geteilt' },
+          { id: 'mix', icon: '✖️➗', label: 'Mix', fullLabel: 'Mal & Geteilt Mix' },
+          { id: 'gap', icon: '🧩', label: 'Lücken', fullLabel: 'Lücken-Profi' },
+        ]
+      : [
+          { id: 'base', icon: '➕', label: 'Plus', fullLabel: 'Nur Plus' },
+          { id: 'inverse', icon: '➖', label: 'Minus', fullLabel: 'Nur Minus' },
+          { id: 'mix', icon: '➕➖', label: 'Mix', fullLabel: 'Plus & Minus Mix' },
+          { id: 'gap', icon: '🧩', label: 'Lücken', fullLabel: 'Lücken-Profi' },
+        ]
+  );
+
+  let activeWorldSummary = $derived.by(() => {
+    if (effectiveWorldScope === 'all') {
+      return unlockedWorldCount < 3 ? 'Alle freigeschalteten Welten' : 'Alle Welten';
+    }
+    if (effectiveWorldScope === 1) {
+      return gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)';
+    }
+    if (effectiveWorldScope === 2) {
+      return gameMode === 'mult'
+        ? 'Welt 2 (Forscherreihen)'
+        : 'Welt 2 (Verdoppeln & Zehner)';
+    }
+    return gameMode === 'mult' ? 'Welt 3 (Königsaufgaben)' : 'Welt 3 (Zehnerübergang)';
+  });
+
+  let activeOperationSummary = $derived(
+    operationOptions.find((o) => o.id === practiceOperation)?.fullLabel ??
+      operationOptions[0].fullLabel
+  );
 
   function handleWeakSpotsClick() {
     if (weakSpotCount > 0) {
@@ -220,6 +289,50 @@
   </header>
 
 
+  <!-- 2. OPT-IN FEIER-BANNER BEI NEUER FREIGESCHALTETER WELT -->
+  {#if showUnlockBanner}
+    <section
+      class="bg-emerald-50 dark:bg-emerald-950/50 rounded-[22px] p-4 border border-emerald-300/80 dark:border-emerald-700/70 space-y-2.5 animate-fade-in"
+      aria-label="Neue Welt freigeschaltet"
+    >
+      <div class="flex items-start gap-2.5">
+        <span class="text-2xl shrink-0">🎉</span>
+        <div>
+          <h3 class="text-sm font-black text-emerald-950 dark:text-emerald-100 m-0">
+            Geschafft! Welt {unlockedWorldCount} ist freigeschaltet!
+          </h3>
+          <p class="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5 mb-0 leading-snug">
+            Du hast Welt {unlockedWorldCount - 1} super gemeistert! Möchtest du jetzt wechseln oder noch in deiner bisherigen Welt bleiben?
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onclick={() => {
+            playKeyTap(soundEnabled);
+            lockedWorldNotice = null;
+            onSelectWorldScope?.(unlockedWorldCount as 2 | 3);
+            onAcknowledgeWorldUnlock?.(unlockedWorldCount);
+          }}
+          class="flex-1 min-w-[140px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black border-none cursor-pointer shadow-xs transition active:scale-[0.98]"
+        >
+          🚀 Zu Welt {unlockedWorldCount} wechseln
+        </button>
+        <button
+          type="button"
+          onclick={() => {
+            playKeyTap(soundEnabled);
+            onAcknowledgeWorldUnlock?.(unlockedWorldCount);
+          }}
+          class="py-2 px-3 rounded-xl bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-emerald-900 dark:text-emerald-200 text-xs font-extrabold border border-emerald-300/70 dark:border-emerald-700 cursor-pointer transition"
+        >
+          Hier bleiben
+        </button>
+      </div>
+    </section>
+  {/if}
+
   <!-- 3. HERO: TAGES-MISSION -->
   <section class="bg-white dark:bg-[#1c1c1e] rounded-[22px] p-5 border border-black/[0.07] dark:border-white/[0.07]" aria-label="Tages-Mission">
     <div class="flex items-center justify-between gap-2">
@@ -238,9 +351,95 @@
     <h2 class="text-lg sm:text-xl font-extrabold tracking-tight leading-tight whitespace-nowrap text-[#0f1115] dark:text-white mt-3.5 mb-0">
       {stats.sessionSize} Aufgaben für heute
     </h2>
-    <p class="text-[13px] text-[#6b7280] dark:text-[#98989f] mt-1.5 mb-0">
-      Kurz üben, lange merken.
+    <p class="text-[13px] text-[#6b7280] dark:text-[#98989f] font-semibold mt-1 mb-0">
+      {activeWorldSummary} · {activeOperationSummary}
     </p>
+
+    <!-- 1. Rechenart-Auswahl (4 kindgerechte Tiles) -->
+    <div class="mt-3.5 space-y-2">
+      <div class="grid grid-cols-4 gap-1.5" role="group" aria-label="Rechenart auswählen">
+        {#each operationOptions as opt (opt.id)}
+          {@const isSelectedOp = practiceOperation === opt.id}
+          <button
+            type="button"
+            onclick={() => {
+              playKeyTap(soundEnabled);
+              onSelectOperation?.(opt.id);
+            }}
+            aria-pressed={isSelectedOp}
+            class="py-2 px-1 rounded-2xl border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer active:scale-95 {
+              isSelectedOp
+                ? 'bg-[#e8f0ff] dark:bg-[#4c9aff]/20 border-[#0a6cff] dark:border-[#4c9aff] text-[#0a6cff] dark:text-[#4c9aff] shadow-2xs'
+                : 'bg-[#f6f7f9] dark:bg-white/[0.06] border-transparent text-[#4b5563] dark:text-[#98989f] hover:text-[#0f1115] dark:hover:text-white'
+            }"
+          >
+            <span class="text-sm sm:text-base leading-none">{opt.icon}</span>
+            <span class="text-[10.5px] sm:text-[11px] font-extrabold leading-tight truncate max-w-full">
+              {opt.label}
+            </span>
+          </button>
+        {/each}
+      </div>
+
+      <!-- 2. Welten-Auswahl (kompakte Pills) -->
+      <div class="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Rechenwelt auswählen">
+        {#each [1, 2, 3] as const as w (w)}
+          {@const isLocked = w > unlockedWorldCount}
+          {@const isSelectedWorld = effectiveWorldScope === w}
+          <button
+            type="button"
+            onclick={() => {
+              playKeyTap(soundEnabled);
+              if (isLocked) {
+                lockedWorldNotice = lockedWorldNotice === w ? null : w;
+              } else {
+                lockedWorldNotice = null;
+                onSelectWorldScope?.(w);
+              }
+            }}
+            aria-pressed={isSelectedWorld}
+            class="text-[11px] font-extrabold px-3 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 active:scale-95 {
+              isSelectedWorld
+                ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+                : isLocked
+                ? 'bg-[#f6f7f9] dark:bg-white/[0.04] text-[#9aa1ad] dark:text-[#6c6c74] border-transparent'
+                : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
+            }"
+          >
+            <span>Welt {w}</span>
+            {#if isLocked}
+              <span class="text-[9.5px]">🔒</span>
+            {/if}
+          </button>
+        {/each}
+
+        {#if unlockedWorldCount >= 2}
+          {@const isAllSelected = effectiveWorldScope === 'all'}
+          <button
+            type="button"
+            onclick={() => {
+              playKeyTap(soundEnabled);
+              lockedWorldNotice = null;
+              onSelectWorldScope?.('all');
+            }}
+            aria-pressed={isAllSelected}
+            class="text-[11px] font-extrabold px-3 py-1.5 rounded-full border transition cursor-pointer active:scale-95 {
+              isAllSelected
+                ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+                : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
+            }"
+          >
+            Alle
+          </button>
+        {/if}
+      </div>
+
+      {#if lockedWorldNotice !== null && lockedWorldNotice > unlockedWorldCount}
+        <div class="text-[11px] font-semibold text-[#4b5563] dark:text-slate-300 bg-[#f6f7f9] dark:bg-white/[0.06] px-3 py-2 rounded-2xl animate-fade-in">
+          🔒 Welt {lockedWorldNotice} schaltet sich frei, sobald 80 % von Welt {lockedWorldNotice - 1} hellgrün sind (oder über Optionen → Lernpfad: Frei).
+        </div>
+      {/if}
+    </div>
 
     <button
       type="button"
@@ -256,6 +455,7 @@
   <Heatmap
     {gameMode}
     {facts}
+    {practiceOperation}
     freeWorldChoice={activeProfile.freeWorldChoice ?? false}
     onPracticeFact={onPracticeFact}
     onStartChapterSession={onStartChapterSession}

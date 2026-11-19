@@ -4,11 +4,17 @@ import {
   selectTaskVariant,
 } from './generator';
 import { checkHasV2Data, importProfilesFromV2 } from './migration';
-import { getAccessibleFactsPoolV3, getFactWorld, type QueuedTaskV3 } from './chapters';
+import {
+  getFactWorld,
+  getScopedFactsV3,
+  isOperationUnmasteredV3,
+  type QueuedTaskV3,
+} from './chapters';
 import type {
   FactFamily,
   GameMode,
-  TaskVariant,
+  PracticeOperation,
+  PracticeWorldScope,
   UserProfileV3,
   UserStatsV3,
 } from './types';
@@ -51,6 +57,9 @@ export function getDefaultStatsV3(): UserStatsV3 {
     fastSolved: 0,
     soundEnabled: true,
     sessionSize: 10,
+    practiceOperation: 'base',
+    practiceWorldScope: 1,
+    acknowledgedUnlockedWorld: 1,
   };
 }
 
@@ -137,6 +146,14 @@ export function loadV3ProfilesAndActiveId(): {
           ...p,
           defaultAvatar: getProfileDefaultAvatar(p),
           unlockedStickers: p.unlockedStickers ?? [],
+          multStats: {
+            ...p.multStats,
+            practiceOperation: p.multStats.practiceOperation ?? ('base' as const),
+          },
+          plusMinusStats: {
+            ...p.plusMinusStats,
+            practiceOperation: p.plusMinusStats.practiceOperation ?? ('base' as const),
+          },
         }));
         const savedActiveId = window.localStorage.getItem(V3_ACTIVE_PROFILE_ID_KEY);
         const exists = sanitized.some((p) => p.id === savedActiveId);
@@ -354,43 +371,58 @@ export function orderUnlearnedFactsV3(
 
 /**
  * Erstellt die Tages-Mission (Daily Session Queue):
- * - Beachtet den didaktischen Welten-Schutz: Neue Fakten kommen NUR aus freigeschalteten Welten!
- * - Mischt fällige Wiederholungen (max. 60%) mit neuen Fakten (30%) und Festigung (10%).
- * - Weist jedem Faktum über selectTaskVariant() eine kindgerechte Darstellungsform zu.
+ * - Respektiert strikt den gewählten Welten-Scope (`1 | 2 | 3 | 'all'`) – alte fällige Fakten aus
+ *   anderen Welten sickern NICHT durch und neue Welten werden nicht automatisch aufgezwungen.
+ * - Verwendet für alle Aufgaben streng die explizit gewählte Rechenart (`PracticeOperation`).
  */
 export function buildDailySessionQueueV3(
   facts: FactFamily[],
   sessionSize = 10,
   now = Date.now(),
-  freeWorldChoice = false
+  freeWorldChoice = false,
+  operation: PracticeOperation = 'base',
+  worldScope?: PracticeWorldScope
 ): QueuedTaskV3[] {
   const mode = facts[0]?.mode ?? 'mult';
-  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode, freeWorldChoice);
-  const accessibleIds = new Set(accessibleFacts.map((f) => f.id));
+  const { scopedFacts, effectiveScope } = getScopedFactsV3(
+    facts,
+    mode,
+    freeWorldChoice,
+    worldScope
+  );
+  const scopedIds = new Set(scopedFacts.map((f) => f.id));
 
-  // 1. Fällige Wiederholungen aus allen bereits begonnenen Aufgaben
+  // 1. Fällige Wiederholungen – STRENG begrenzt auf die aktuell gewählte Welt!
   const due = facts
-    .filter((f) => f.totalAttempts > 0 && (f.dueDate <= now || f.repetitions === 0))
+    .filter(
+      (f) =>
+        scopedIds.has(f.id) &&
+        f.totalAttempts > 0 &&
+        (f.dueDate <= now || f.repetitions === 0)
+    )
     .sort((a, b) => {
       if (a.repetitions === 0 && b.repetitions !== 0) return -1;
       if (b.repetitions === 0 && a.repetitions !== 0) return 1;
       return a.dueDate - b.dueDate;
     });
+  const dueIds = new Set(due.map((f) => f.id));
 
-  // 2. Neue ungelernte Fakten – STRENG GEFILTERT auf die freigeschalteten Welten und didaktisch ausbalanciert!
-  const unlearnedRaw = facts
-    .filter((f) => f.totalAttempts === 0 && accessibleIds.has(f.id));
+  // 2. Für die gewählte Rechenart noch ungelöste/ungemeisterte Fakten im Scope
+  const unlearnedRaw = scopedFacts.filter(
+    (f) => isOperationUnmasteredV3(f, operation) && !dueIds.has(f.id)
+  );
 
-  const unlearned = orderUnlearnedFactsV3(unlearnedRaw, mode, freeWorldChoice);
+  const unlearned = orderUnlearnedFactsV3(unlearnedRaw, mode, effectiveScope === 'all');
 
-  // 3. Zukünftige Festigungs-Fakten (nur aus freigeschalteten Welten)
+  // 3. Zukünftige Festigungs-Fakten (nur aus dem gewählten Welten-Scope)
   const upcoming = facts
     .filter(
       (f) =>
+        scopedIds.has(f.id) &&
+        !dueIds.has(f.id) &&
         f.totalAttempts > 0 &&
         f.dueDate > now &&
-        f.repetitions > 0 &&
-        accessibleIds.has(f.id)
+        f.repetitions > 0
     )
     .sort((a, b) => a.dueDate - b.dueDate);
 
@@ -409,48 +441,40 @@ export function buildDailySessionQueueV3(
     selectedFacts.push(...extraDue);
   }
   if (selectedFacts.length < sessionSize) {
-    selectedFacts.push(...upcoming.slice(0, sessionSize - selectedFacts.length));
+    for (const f of upcoming) {
+      if (selectedFacts.length >= sessionSize) break;
+      if (!selectedFacts.some((s) => s.id === f.id)) {
+        selectedFacts.push(f);
+      }
+    }
   }
 
-  // Falls das Kind an einem Tag sehr viel spielt und alle freigeschalteten Fakten schon dran waren:
-  // Fülle NUR aus bereits bekannten Fakten des freigeschalteten Pools auf (Festigung/Tempo), NIEMALS aus gesperrten Welten!
+  // Falls alle Fakten des gewählten Scopes schon erledigt sind: zufällig aus diesem Scope auffüllen, NIEMALS aus anderen Welten!
   if (selectedFacts.length < sessionSize) {
-    const fallbackPool = accessibleFacts.filter(
-      (f) => !selectedFacts.some((s) => s.id === f.id)
-    );
+    const fallbackPool = scopedFacts
+      .filter((f) => !selectedFacts.some((s) => s.id === f.id))
+      .sort(() => Math.random() - 0.5);
     selectedFacts.push(...fallbackPool.slice(0, sessionSize - selectedFacts.length));
   }
 
-  // Bestimme für jede Rechenwelt, ob alle Basis-Aufgaben bereits mindestens 1x gelernt wurden
-  const worldBaseLearnedMap = new Map<number, boolean>();
-  for (const w of [1, 2, 3]) {
-    const wFacts = facts.filter((f) => getFactWorld(f) === w);
-    const allLearned = wFacts.length > 0 && wFacts.every((f) => f.repetitions >= 1);
-    worldBaseLearnedMap.set(w, allLearned);
-  }
-
-  // Jeder gewählten Faktenfamilie eine dynamische Variante zuweisen:
-  // Geteilt- und Minusaufgaben werden erst eingesteuert, wenn alle Basisaufgaben der jeweiligen Welt mindestens 1x gelernt wurden!
-  const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => {
-    const world = getFactWorld(fact);
-    const allowInverse = worldBaseLearnedMap.get(world) ?? false;
-    return {
-      fact,
-      variant: selectTaskVariant(fact, allowInverse),
-    };
-  });
+  // Alle gewählten Fakten streng in der vom Kind/Eltern gewählten Rechenart abfragen
+  const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => ({
+    fact,
+    variant: selectTaskVariant(fact, operation),
+  }));
 
   return smartShuffleV3(tasks);
 }
 
 /**
  * Erstellt eine gezielte Übungsrunde für eine bestimmte Reihe (z. B. 7er-Reihe oder Rechnen mit 7).
- * Beinhaltet alle 10 Kern-Aufgaben dieser Reihe, priorisiert fällige/ungelernte und mischt sie.
+ * Beinhaltet alle 10 Kern-Aufgaben dieser Reihe, priorisiert fällige/ungemeisterte und mischt sie.
  */
 export function buildRowSessionQueueV3(
   facts: FactFamily[],
   targetNumber: number,
-  sessionSize = 10
+  sessionSize = 10,
+  operation: PracticeOperation = 'base'
 ): QueuedTaskV3[] {
   // Bevorzuge primär a === targetNumber (z. B. 7 × 1 .. 7 × 10), ergänze mit Tauschaufgaben (b === targetNumber)
   const primaryFacts = facts.filter((f) => f.a === targetNumber);
@@ -463,16 +487,16 @@ export function buildRowSessionQueueV3(
   const due = pool.filter(
     (f) => f.totalAttempts > 0 && (f.dueDate <= Date.now() || f.repetitions === 0)
   );
-  const unlearned = pool.filter((f) => f.totalAttempts === 0);
+  const unlearned = pool.filter((f) => isOperationUnmasteredV3(f, operation));
   const mastered = pool.filter((f) => f.repetitions > 0);
 
   const selectedFacts: FactFamily[] = [];
 
   // 1. Fällige Wiederholungen
-  selectedFacts.push(...due);
+  selectedFacts.push(...due.slice(0, sessionSize));
 
-  // 2. Neue ungelernte Aufgaben dieser Reihe
-  for (const f of unlearned) {
+  // 2. Für diese Rechenart noch ungemeisterte Aufgaben dieser Reihe (gemischt)
+  for (const f of [...unlearned].sort(() => Math.random() - 0.5)) {
     if (selectedFacts.length >= sessionSize) break;
     if (!selectedFacts.some((s) => s.id === f.id)) {
       selectedFacts.push(f);
@@ -480,7 +504,7 @@ export function buildRowSessionQueueV3(
   }
 
   // 3. Mit Wiederholungen auffüllen
-  for (const f of mastered.sort(() => Math.random() - 0.5)) {
+  for (const f of [...mastered].sort(() => Math.random() - 0.5)) {
     if (selectedFacts.length >= sessionSize) break;
     if (!selectedFacts.some((s) => s.id === f.id)) {
       selectedFacts.push(f);
@@ -488,19 +512,16 @@ export function buildRowSessionQueueV3(
   }
 
   // 4. Fallback aus primaryFacts
-  for (const f of primaryFacts) {
+  for (const f of [...primaryFacts].sort(() => Math.random() - 0.5)) {
     if (selectedFacts.length >= sessionSize) break;
     if (!selectedFacts.some((s) => s.id === f.id)) {
       selectedFacts.push(f);
     }
   }
 
-  // Prüfen, ob alle Basisaufgaben dieser Reihe bereits mindestens 1x gelöst wurden
-  const allBaseLearned = primaryFacts.every((f) => f.repetitions >= 1);
-
   const tasks: QueuedTaskV3[] = selectedFacts.slice(0, sessionSize).map((fact) => ({
     fact,
-    variant: selectTaskVariant(fact, allBaseLearned),
+    variant: selectTaskVariant(fact, operation),
   }));
 
   return smartShuffleV3(tasks);
@@ -541,7 +562,8 @@ export function getWeakSpotFactsV3(facts: FactFamily[]): FactFamily[] {
  */
 export function buildWeakSpotsSessionQueueV3(
   facts: FactFamily[],
-  sessionSize = 10
+  sessionSize = 10,
+  operation: PracticeOperation = 'base'
 ): QueuedTaskV3[] {
   const weakSpots = getWeakSpotFactsV3(facts);
   if (weakSpots.length === 0) return [];
@@ -565,12 +587,7 @@ export function buildWeakSpotsSessionQueueV3(
 
   const tasks: QueuedTaskV3[] = selectedFacts.map((fact) => ({
     fact,
-    variant:
-      fact.lastQuality === 0
-        ? fact.mode === 'mult'
-          ? 'mult'
-          : 'add'
-        : selectTaskVariant(fact),
+    variant: selectTaskVariant(fact, operation),
   }));
 
   return smartShuffleV3(tasks);
@@ -578,35 +595,32 @@ export function buildWeakSpotsSessionQueueV3(
 
 /**
  * Erstellt eine schnelle Aufgaben-Queue für die 60-Sekunden-Blitz-Challenge:
- * - Zieht nur bereits freigeschaltete und schon mindestens 1x gesehene Fakten (oder Welt 1 Grundaufgaben)
- * - Bevorzugt schnelle Grund- und Umkehraufgaben für maximalen Spielspaß ohne Lückenverwirrung
+ * - Respektiert den gewählten Welten-Scope (`1 | 2 | 3 | 'all'`) und die Rechenart (`PracticeOperation`)
+ * - Zieht primär bereits geübte Fakten im Scope (oder alle im Scope, falls < 10)
  */
 export function buildBlitzChallengeQueueV3(
   facts: FactFamily[],
-  count = 60
+  count = 60,
+  freeWorldChoice = false,
+  operation: PracticeOperation = 'base',
+  worldScope?: PracticeWorldScope
 ): QueuedTaskV3[] {
   const mode = facts[0]?.mode ?? 'mult';
-  const { accessibleFacts } = getAccessibleFactsPoolV3(facts, mode);
+  const { scopedFacts } = getScopedFactsV3(facts, mode, freeWorldChoice, worldScope);
 
-  let pool = accessibleFacts.filter((f) => f.repetitions >= 1);
+  let pool = scopedFacts.filter((f) => f.repetitions >= 1);
   if (pool.length < 10) {
-    pool = accessibleFacts;
+    pool = scopedFacts;
   }
 
   const result: QueuedTaskV3[] = [];
-  while (result.length < count) {
+  while (result.length < count && pool.length > 0) {
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     for (const fact of shuffled) {
-      const variant: TaskVariant =
-        mode === 'mult'
-          ? Math.random() < 0.65 || fact.repetitions < 2
-            ? 'mult'
-            : 'div'
-          : Math.random() < 0.65 || fact.repetitions < 2
-            ? 'add'
-            : 'sub';
-
-      result.push({ fact, variant });
+      result.push({
+        fact,
+        variant: selectTaskVariant(fact, operation),
+      });
       if (result.length >= count) break;
     }
   }

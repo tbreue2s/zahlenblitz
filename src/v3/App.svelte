@@ -3,6 +3,8 @@
   import { playKeyTap } from './lib/audio';
   import {
     buildChapterSessionQueueV3,
+    getScopedFactsV3,
+    getWorldChaptersV3,
     type QueuedTaskV3,
     type WorldChapterV3,
   } from './lib/chapters';
@@ -18,7 +20,14 @@
     registerDailyPracticeV3,
     saveV3ProfilesAndActiveId,
   } from './lib/storage';
-  import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from './lib/types';
+  import type {
+    FactFamily,
+    GameMode,
+    PracticeOperation,
+    PracticeWorldScope,
+    UserProfileV3,
+    UserStatsV3,
+  } from './lib/types';
   import HomeView from './components/HomeView.svelte';
   import PracticeView from './components/PracticeView.svelte';
   import BlitzChallengeView from './components/BlitzChallengeView.svelte';
@@ -27,6 +36,12 @@
   import LegalView from '../components/LegalView.svelte';
 
   type Screen = 'home' | 'practice' | 'users' | 'legal' | 'blitz';
+  type LastSessionSpec =
+    | { type: 'daily' }
+    | { type: 'weakSpots' }
+    | { type: 'chapter'; chapterId: string }
+    | { type: 'row'; rowNumber: number }
+    | { type: 'fact'; factId: string };
 
   let currentScreen = $state<Screen>('home');
   let loaded = loadV3ProfilesAndActiveId();
@@ -35,6 +50,8 @@
   let showOnboarding = $state(checkNeedsOnboardingV3(loaded.profiles));
 
   let activeSessionQueue = $state<QueuedTaskV3[]>([]);
+  let sessionRunId = $state(0);
+  let lastSessionSpec = $state<LastSessionSpec>({ type: 'daily' });
   let highlightStars = $state(false);
 
   let activeProfile = $derived(
@@ -47,6 +64,20 @@
   let stats = $derived<UserStatsV3>(
     gameMode === 'mult' ? activeProfile.multStats : activeProfile.plusMinusStats
   );
+  let practiceOperation = $derived<PracticeOperation>(
+    stats.practiceOperation ?? 'base'
+  );
+  let scopedPool = $derived(
+    getScopedFactsV3(
+      facts,
+      gameMode,
+      activeProfile.freeWorldChoice ?? false,
+      stats.practiceWorldScope
+    )
+  );
+  let effectiveWorldScope = $derived<PracticeWorldScope>(scopedPool.effectiveScope);
+  let scopedFacts = $derived<FactFamily[]>(scopedPool.scopedFacts);
+  let unlockedWorldCount = $derived<number>(scopedPool.unlockedWorldCount);
 
   function persistAll(nextProfiles: UserProfileV3[], nextActiveId: string) {
     profiles = nextProfiles;
@@ -79,19 +110,70 @@
     if (nextSound) playKeyTap(true);
   }
 
-  function handleStartDailySession() {
-    activeSessionQueue = buildDailySessionQueueV3(
-      facts,
-      stats.sessionSize,
-      Date.now(),
-      activeProfile.freeWorldChoice ?? false
-    );
+  function updateActiveModeStats(updater: (modeStats: UserStatsV3) => UserStatsV3) {
+    updateActiveProfile((prof) => {
+      const mode = prof.activeGameMode ?? 'mult';
+      if (mode === 'mult') {
+        return { ...prof, multStats: updater(prof.multStats) };
+      }
+      return { ...prof, plusMinusStats: updater(prof.plusMinusStats) };
+    });
+  }
+
+  function handleSelectOperation(nextOp: PracticeOperation) {
+    updateActiveModeStats((mStats) => ({
+      ...mStats,
+      practiceOperation: nextOp,
+    }));
+  }
+
+  function handleSelectWorldScope(nextScope: PracticeWorldScope) {
+    updateActiveModeStats((mStats) => ({
+      ...mStats,
+      practiceWorldScope: nextScope,
+      acknowledgedUnlockedWorld:
+        nextScope === 'all' || nextScope === unlockedWorldCount
+          ? Math.max(mStats.acknowledgedUnlockedWorld ?? 1, unlockedWorldCount)
+          : mStats.acknowledgedUnlockedWorld,
+    }));
+  }
+
+  function handleAcknowledgeWorldUnlock(worldNumber: number) {
+    updateActiveModeStats((mStats) => ({
+      ...mStats,
+      acknowledgedUnlockedWorld: Math.max(
+        mStats.acknowledgedUnlockedWorld ?? 1,
+        worldNumber
+      ),
+    }));
+  }
+
+  function startPracticeQueue(queue: QueuedTaskV3[], spec: LastSessionSpec) {
+    activeSessionQueue = queue;
+    lastSessionSpec = spec;
+    sessionRunId += 1;
     currentScreen = 'practice';
   }
 
+  function handleStartDailySession() {
+    startPracticeQueue(
+      buildDailySessionQueueV3(
+        facts,
+        stats.sessionSize,
+        Date.now(),
+        activeProfile.freeWorldChoice ?? false,
+        practiceOperation,
+        effectiveWorldScope
+      ),
+      { type: 'daily' }
+    );
+  }
+
   function handleStartWeakSpots() {
-    activeSessionQueue = buildWeakSpotsSessionQueueV3(facts, stats.sessionSize);
-    currentScreen = 'practice';
+    startPracticeQueue(
+      buildWeakSpotsSessionQueueV3(scopedFacts, stats.sessionSize, practiceOperation),
+      { type: 'weakSpots' }
+    );
   }
 
   function handleStartBlitz() {
@@ -172,18 +254,55 @@
   }
 
   function handleStartChapterSession(chapter: WorldChapterV3) {
-    activeSessionQueue = buildChapterSessionQueueV3(chapter, stats.sessionSize);
-    currentScreen = 'practice';
+    startPracticeQueue(
+      buildChapterSessionQueueV3(chapter, stats.sessionSize, practiceOperation),
+      { type: 'chapter', chapterId: chapter.id }
+    );
   }
 
   function handleStartRowSession(rowNumber: number) {
-    activeSessionQueue = buildRowSessionQueueV3(facts, rowNumber, stats.sessionSize);
-    currentScreen = 'practice';
+    startPracticeQueue(
+      buildRowSessionQueueV3(facts, rowNumber, stats.sessionSize, practiceOperation),
+      { type: 'row', rowNumber }
+    );
   }
 
   function handlePracticeFact(fact: FactFamily) {
-    activeSessionQueue = [{ fact, variant: selectTaskVariant(fact) }];
-    currentScreen = 'practice';
+    startPracticeQueue(
+      [{ fact, variant: selectTaskVariant(fact, practiceOperation) }],
+      { type: 'fact', factId: fact.id }
+    );
+  }
+
+  function handleRestartPracticeSession() {
+    switch (lastSessionSpec.type) {
+      case 'weakSpots':
+        handleStartWeakSpots();
+        break;
+      case 'chapter': {
+        const chapterId = lastSessionSpec.chapterId;
+        const chapter = getWorldChaptersV3(facts, gameMode).find(
+          (c) => c.id === chapterId
+        );
+        if (chapter) handleStartChapterSession(chapter);
+        else handleStartDailySession();
+        break;
+      }
+      case 'row':
+        handleStartRowSession(lastSessionSpec.rowNumber);
+        break;
+      case 'fact': {
+        const factId = lastSessionSpec.factId;
+        const fact = facts.find((f) => f.id === factId);
+        if (fact) handlePracticeFact(fact);
+        else handleStartDailySession();
+        break;
+      }
+      case 'daily':
+      default:
+        handleStartDailySession();
+        break;
+    }
   }
 
   function handleFactEvaluated(
@@ -289,9 +408,25 @@
   }
 
   function handleToggleFreeWorldChoice(profileId: string, freeChoice: boolean) {
-    const next = profiles.map((p) =>
-      p.id === profileId ? { ...p, freeWorldChoice: freeChoice } : p
-    );
+    const next = profiles.map((p) => {
+      if (p.id !== profileId) return p;
+      const nextMultScope: PracticeWorldScope | undefined = freeChoice
+        ? 'all'
+        : p.multStats.practiceWorldScope === 'all'
+          ? 1
+          : p.multStats.practiceWorldScope;
+      const nextPmScope: PracticeWorldScope | undefined = freeChoice
+        ? 'all'
+        : p.plusMinusStats.practiceWorldScope === 'all'
+          ? 1
+          : p.plusMinusStats.practiceWorldScope;
+      return {
+        ...p,
+        freeWorldChoice: freeChoice,
+        multStats: { ...p.multStats, practiceWorldScope: nextMultScope },
+        plusMinusStats: { ...p.plusMinusStats, practiceWorldScope: nextPmScope },
+      };
+    });
     persistAll(next, activeProfileId);
   }
 
@@ -321,13 +456,20 @@
     <HomeView
       {gameMode}
       {facts}
+      {scopedFacts}
       {stats}
       {activeProfile}
       {profiles}
       soundEnabled={stats.soundEnabled}
       {highlightStars}
+      {practiceOperation}
+      {effectiveWorldScope}
+      {unlockedWorldCount}
       onAcknowledgeStars={() => (highlightStars = false)}
       onSwitchGameMode={handleSwitchGameMode}
+      onSelectOperation={handleSelectOperation}
+      onSelectWorldScope={handleSelectWorldScope}
+      onAcknowledgeWorldUnlock={handleAcknowledgeWorldUnlock}
       onSelectProfile={handleSelectProfile}
       onToggleSound={handleToggleSound}
       onStartDailySession={handleStartDailySession}
@@ -341,25 +483,28 @@
       onSaveStickers={handleSaveStickers}
     />
   {:else if currentScreen === 'practice'}
-    <PracticeView
-      initialQueue={activeSessionQueue}
-      soundEnabled={stats.soundEnabled}
-      onFactEvaluated={handleFactEvaluated}
-      onFinishSession={(completed) => {
-        if (completed) {
-          highlightStars = true;
-        }
-        currentScreen = 'home';
-      }}
-      onRestartSession={() => {
-        handleStartDailySession();
-      }}
-    />
+    {#key sessionRunId}
+      <PracticeView
+        initialQueue={activeSessionQueue}
+        soundEnabled={stats.soundEnabled}
+        onFactEvaluated={handleFactEvaluated}
+        onFinishSession={(completed) => {
+          if (completed) {
+            highlightStars = true;
+          }
+          currentScreen = 'home';
+        }}
+        onRestartSession={handleRestartPracticeSession}
+      />
+    {/key}
   {:else if currentScreen === 'blitz'}
     <BlitzChallengeView
       {facts}
       currentHighscore={stats.blitzHighscore ?? 0}
       soundEnabled={stats.soundEnabled}
+      freeWorldChoice={activeProfile.freeWorldChoice ?? false}
+      {practiceOperation}
+      practiceWorldScope={effectiveWorldScope}
       onRecordHighscore={handleRecordHighscore}
       onAddStars={handleAddStars}
       onBack={() => (currentScreen = 'home')}

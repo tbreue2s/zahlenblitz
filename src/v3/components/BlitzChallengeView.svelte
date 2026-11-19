@@ -14,13 +14,20 @@
   import type { QueuedTaskV3 } from '../lib/chapters';
   import { formatEquationPartsV3 } from '../lib/generator';
   import { buildBlitzChallengeQueueV3 } from '../lib/storage';
-  import type { FactFamily } from '../lib/types';
+  import type {
+    FactFamily,
+    PracticeOperation,
+    PracticeWorldScope,
+  } from '../lib/types';
   import Keypad from './Keypad.svelte';
 
   interface Props {
     facts: FactFamily[];
     currentHighscore: number;
     soundEnabled: boolean;
+    freeWorldChoice?: boolean;
+    practiceOperation?: PracticeOperation;
+    practiceWorldScope?: PracticeWorldScope;
     onRecordHighscore: (score: number) => void;
     onAddStars: (stars: number) => void;
     onBack: () => void;
@@ -30,6 +37,9 @@
     facts,
     currentHighscore,
     soundEnabled,
+    freeWorldChoice = false,
+    practiceOperation = 'base',
+    practiceWorldScope,
     onRecordHighscore,
     onAddStars,
     onBack,
@@ -139,7 +149,16 @@
       currentIndex++;
     } else {
       // Endlos Nachschub an Aufgaben
-      queue = [...queue, ...buildBlitzChallengeQueueV3(facts, 30)];
+      queue = [
+        ...queue,
+        ...buildBlitzChallengeQueueV3(
+          facts,
+          30,
+          freeWorldChoice,
+          practiceOperation,
+          practiceWorldScope
+        ),
+      ];
       currentIndex++;
     }
   }
@@ -166,12 +185,24 @@
     isGameOver = false;
     isNewHighscore = false;
     flashEffect = null;
-    queue = buildBlitzChallengeQueueV3(facts, 80);
+    queue = buildBlitzChallengeQueueV3(
+      facts,
+      80,
+      freeWorldChoice,
+      practiceOperation,
+      practiceWorldScope
+    );
     startTimer();
   }
 
   onMount(() => {
-    queue = buildBlitzChallengeQueueV3(facts, 80);
+    queue = buildBlitzChallengeQueueV3(
+      facts,
+      80,
+      freeWorldChoice,
+      practiceOperation,
+      practiceWorldScope
+    );
     startTimer();
   });
 

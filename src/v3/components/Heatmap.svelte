@@ -6,12 +6,18 @@
     getWorldChaptersV3,
     type WorldChapterV3,
   } from '../lib/chapters';
-  import type { FactFamily, FactVisualStatus, GameMode } from '../lib/types';
+  import type {
+    FactFamily,
+    FactVisualStatus,
+    GameMode,
+    PracticeOperation,
+  } from '../lib/types';
 
   interface Props {
     gameMode: GameMode;
     facts: FactFamily[];
     freeWorldChoice?: boolean;
+    practiceOperation?: PracticeOperation;
     onPracticeFact?: (fact: FactFamily) => void;
     onStartChapterSession?: (chapter: WorldChapterV3) => void;
     onStartRowSession?: (rowNumber: number) => void;
@@ -21,10 +27,23 @@
     gameMode,
     facts,
     freeWorldChoice = false,
+    practiceOperation = 'base',
     onPracticeFact,
     onStartChapterSession,
     onStartRowSession,
   }: Props = $props();
+
+  let opLabel = $derived.by(() => {
+    if (practiceOperation === 'gap') return 'Lücken';
+    if (gameMode === 'mult') {
+      if (practiceOperation === 'inverse') return 'Geteilt';
+      if (practiceOperation === 'mix') return 'Mal & Geteilt';
+      return 'Mal';
+    }
+    if (practiceOperation === 'inverse') return 'Minus';
+    if (practiceOperation === 'mix') return 'Plus & Minus';
+    return 'Plus';
+  });
 
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -353,7 +372,7 @@
           }}
           class="shrink-0 px-3 py-1.5 rounded-xl bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black border-none cursor-pointer shadow-xs transition"
         >
-          🎯 Gezielt üben →
+          🎯 Gezielt üben ({opLabel}) →
         </button>
       {/if}
     </div>
@@ -366,7 +385,7 @@
           <span>{selectedRowOrCol}er-Reihe ({gameMode === 'mult' ? `Einmaleins mit ${selectedRowOrCol}` : `Rechnen mit ${selectedRowOrCol}`})</span>
         </div>
         <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
-          10 Aufgaben gezielt aus der {selectedRowOrCol}er-Reihe trainieren
+          10 Aufgaben ({opLabel}) gezielt aus der {selectedRowOrCol}er-Reihe trainieren
         </div>
       </div>
       {#if onStartRowSession}
@@ -400,7 +419,7 @@
             {/if}
           </div>
           <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
-            {activeChapter.subtitle} · {activeChapter.statusText}
+            {activeChapter.subtitle} · Modus: {opLabel}
           </div>
         </div>
         {#if onStartChapterSession}

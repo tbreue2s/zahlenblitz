@@ -1,5 +1,12 @@
+import { selectTaskVariant } from './generator';
 import { getFactMastery, getFactVisualStatus } from './sm2';
-import type { FactFamily, GameMode, TaskVariant } from './types';
+import type {
+  FactFamily,
+  GameMode,
+  PracticeOperation,
+  PracticeWorldScope,
+  TaskVariant,
+} from './types';
 
 export interface StarProgressV3 {
   current: number;
@@ -194,6 +201,66 @@ export function getAccessibleFactsPoolV3(
   return { accessibleFacts, unlockedWorldCount };
 }
 
+/**
+ * Prüft, ob eine Faktenfamilie für die gewählte Rechenart noch ungelöst / ungefestigt ist.
+ */
+export function isOperationUnmasteredV3(
+  fact: FactFamily,
+  operation: PracticeOperation
+): boolean {
+  const inverseVar = fact.mode === 'mult' ? 'div' : 'sub';
+  switch (operation) {
+    case 'inverse':
+      return !fact.masteredVariants.includes(inverseVar);
+    case 'gap':
+      return !fact.masteredVariants.some((v) => v.startsWith('gap_'));
+    case 'mix':
+      return fact.totalAttempts === 0 || !fact.masteredVariants.includes(inverseVar);
+    case 'base':
+    default:
+      return fact.totalAttempts === 0;
+  }
+}
+
+/**
+ * Filtert die freigeschalteten Fakten strikt auf den gewählten Welten-Scope (`1 | 2 | 3 | 'all'`).
+ * Sicherer Fallback: Wenn die gewählte Welt noch gesperrt ist, wird auf die höchste freigeschaltete Welt geclampt.
+ */
+export function getScopedFactsV3(
+  facts: FactFamily[],
+  mode: GameMode,
+  freeWorldChoice = false,
+  worldScope?: PracticeWorldScope
+): {
+  scopedFacts: FactFamily[];
+  effectiveScope: PracticeWorldScope;
+  accessibleFacts: FactFamily[];
+  unlockedWorldCount: number;
+} {
+  const { accessibleFacts, unlockedWorldCount } = getAccessibleFactsPoolV3(
+    facts,
+    mode,
+    freeWorldChoice
+  );
+
+  let effectiveScope: PracticeWorldScope = worldScope ?? (freeWorldChoice ? 'all' : 1);
+  if (typeof effectiveScope === 'number' && effectiveScope > unlockedWorldCount) {
+    effectiveScope = unlockedWorldCount as 1 | 2 | 3;
+  }
+
+  const scopedFacts =
+    effectiveScope === 'all'
+      ? accessibleFacts
+      : accessibleFacts.filter((f) => getFactWorld(f) === effectiveScope);
+
+  return {
+    scopedFacts,
+    effectiveScope,
+    accessibleFacts,
+    unlockedWorldCount,
+  };
+}
+
 function buildMultChapterV3(
   id: string,
   title: string,
@@ -345,12 +412,13 @@ function computeChapterStatsV3(
 }
 
 /**
- * Erstellt eine intelligente Übungsrunde für eine bestimmte Rechenwelt.
- * Passt die Abfrage-Variante automatisch an das aktuelle Sternen-Level der Welt an.
+ * Erstellt eine intelligente Übungsrunde für eine bestimmte Rechenwelt
+ * anhand der explizit gewählten Rechenart (kein automatischer Zwang auf Minus/Lücken).
  */
 export function buildChapterSessionQueueV3(
   chapter: WorldChapterV3,
-  sessionSize = 10
+  sessionSize = 10,
+  operation: PracticeOperation = 'base'
 ): QueuedTaskV3[] {
   const pool = [...chapter.facts];
 
@@ -358,8 +426,13 @@ export function buildChapterSessionQueueV3(
   const due = pool.filter(
     (f) => f.totalAttempts > 0 && (f.dueDate <= Date.now() || f.repetitions === 0)
   );
-  const unlearned = pool.filter((f) => f.totalAttempts === 0);
-  const mastered = pool.filter((f) => getFactMastery(f) === 'mastered');
+  const dueIds = new Set(due.map((f) => f.id));
+  const unlearned = pool.filter(
+    (f) => isOperationUnmasteredV3(f, operation) && !dueIds.has(f.id)
+  );
+  const mastered = pool.filter(
+    (f) => getFactMastery(f) === 'mastered' && !dueIds.has(f.id)
+  );
 
   const selectedFacts: FactFamily[] = [];
 
@@ -367,37 +440,40 @@ export function buildChapterSessionQueueV3(
   const maxDue = Math.min(due.length, Math.ceil(sessionSize * 0.6));
   selectedFacts.push(...due.slice(0, maxDue));
 
-  // 2. Neue Aufgaben
+  // 2. Für die gewählte Rechenart noch ungemeisterte Aufgaben
   const neededForNew = sessionSize - selectedFacts.length;
   const shuffledUnlearned = [...unlearned].sort(() => Math.random() - 0.5);
-  selectedFacts.push(...shuffledUnlearned.slice(0, neededForNew));
+  for (const f of shuffledUnlearned) {
+    if (selectedFacts.length >= maxDue + neededForNew) break;
+    if (!selectedFacts.some((s) => s.id === f.id)) {
+      selectedFacts.push(f);
+    }
+  }
 
   // 3. Mit Wiederholungen auffüllen
   if (selectedFacts.length < sessionSize && mastered.length > 0) {
     const shuffledMastered = [...mastered].sort(() => Math.random() - 0.5);
-    selectedFacts.push(...shuffledMastered.slice(0, sessionSize - selectedFacts.length));
+    for (const f of shuffledMastered) {
+      if (selectedFacts.length >= sessionSize) break;
+      if (!selectedFacts.some((s) => s.id === f.id)) {
+        selectedFacts.push(f);
+      }
+    }
   }
 
-  // 4. Notfall-Auffüllen
+  // 4. Notfall-Auffüllen (gemischt, nicht nach Schleifen-Reihenfolge!)
   if (selectedFacts.length < sessionSize) {
-    const rest = pool.filter((f) => !selectedFacts.includes(f));
+    const rest = pool
+      .filter((f) => !selectedFacts.some((s) => s.id === f.id))
+      .sort(() => Math.random() - 0.5);
     selectedFacts.push(...rest.slice(0, sessionSize - selectedFacts.length));
   }
 
-  // Mischen
-  const shuffled = selectedFacts.sort(() => Math.random() - 0.5);
+  // Mischen und Variante strikt anhand der gewählten Rechenart zuordnen
+  const shuffled = [...selectedFacts].sort(() => Math.random() - 0.5);
 
-  // Variante gemäß dem Sternenlevel des Kapitels zuordnen:
-  return shuffled.map((fact) => {
-    let variant: TaskVariant;
-    if (chapter.stars === 0) {
-      variant = fact.mode === 'mult' ? 'mult' : 'add';
-    } else if (chapter.stars === 1) {
-      variant = fact.mode === 'mult' ? 'div' : 'sub';
-    } else {
-      // Stufe 3: Lückenaufgabe
-      variant = fact.mode === 'mult' ? 'gap_mult_b' : 'gap_add_b';
-    }
-    return { fact, variant };
-  });
+  return shuffled.map((fact) => ({
+    fact,
+    variant: selectTaskVariant(fact, operation),
+  }));
 }

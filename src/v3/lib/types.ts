@@ -1,5 +1,8 @@
 export type GameMode = 'mult' | 'plusminus';
 
+export type PracticeOperation = 'base' | 'inverse' | 'mix' | 'gap';
+export type PracticeWorldScope = 1 | 2 | 3 | 'all';
+
 export type MultVariant =
   | 'mult'        // a × b = ?
   | 'div'         // c : b = ?
@@ -81,8 +84,11 @@ export interface UserStatsV3 {
   totalSolved: number;
   fastSolved: number;
   soundEnabled: boolean;
-  sessionSize: number;            // Standard: 10 (kindgerechte Rundenlänge)
-  blitzHighscore?: number;        // Bester 60s-Blitz-Score
+  sessionSize: number;                      // Standard: 10 (kindgerechte Rundenlänge)
+  blitzHighscore?: number;                  // Bester 60s-Blitz-Score
+  practiceOperation?: PracticeOperation;    // Standard: 'base' (➕ Plus / ✖️ Mal)
+  practiceWorldScope?: PracticeWorldScope;  // Standard: 1 (bzw. 'all' bei freeWorldChoice)
+  acknowledgedUnlockedWorld?: number;       // Höchste bereits gefeierte/bestätigte freigeschaltete Welt (1..3)
 }
 
 export interface UserProfileV3 {

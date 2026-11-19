@@ -6,6 +6,7 @@ import type {
   GameMode,
   MultVariant,
   PlusMinusVariant,
+  PracticeOperation,
   TaskVariant,
 } from './types';
 
@@ -90,50 +91,44 @@ export function generateMultFacts(): FactFamily[] {
 }
 
 /**
- * Wählt für eine Faktenfamilie die passende Darstellungsform (TaskVariant):
- * - repetitions === 0: IMMER die Grundaufgabe (Mal bzw. Plus), um Überforderung zu verhindern.
- * - repetitions === 1: 50% Grundaufgabe, 50% Umkehraufgabe (Geteilt bzw. Minus).
- * - repetitions >= 2: Rotation durch alle Varianten, ungelöste Transferformen bevorzugt.
+ * Wählt für eine Faktenfamilie die passende Darstellungsform (TaskVariant) streng anhand
+ * der explizit gewählten Rechenart (`PracticeOperation`):
+ * - 'base': IMMER die Grundaufgabe ('mult' bzw. 'add'), niemals automatisches Umschalten.
+ * - 'inverse': IMMER die Umkehraufgabe ('div' bzw. 'sub').
+ * - 'mix': 50 % Grundaufgabe, 50 % Umkehraufgabe.
+ * - 'gap': Ausschließlich kindgerechte Ergänzungsaufgaben ('gap_mult_b': a × ? = c bzw. 'gap_add_b': a + ? = c),
+ *          keine Minus-Lücken (gap_sub_b) oder Geteilt-Lücken (gap_div_a).
  */
-export function selectTaskVariant(fact: FactFamily, allowInverse = true): TaskVariant {
+export function selectTaskVariant(
+  fact: FactFamily,
+  operation: PracticeOperation = 'base'
+): TaskVariant {
   if (fact.mode === 'mult') {
-    if (fact.repetitions === 0 || !allowInverse) {
-      return 'mult';
+    switch (operation) {
+      case 'inverse':
+        return 'div';
+      case 'mix':
+        return Math.random() < 0.5 ? 'mult' : 'div';
+      case 'gap':
+        return 'gap_mult_b'; // a × ? = c
+      case 'base':
+      default:
+        return 'mult';
     }
-    if (fact.repetitions === 1) {
-      return Math.random() < 0.5 ? 'mult' : 'div';
-    }
-    const allMultVariants: MultVariant[] = [
-      'mult',
-      'div',
-      'gap_mult_b', // a × ? = c
-      'gap_div_a',  // c : ? = a
-    ];
-    const unmastered = allMultVariants.filter((v) => !fact.masteredVariants.includes(v));
-    if (unmastered.length > 0) {
-      return unmastered[Math.floor(Math.random() * unmastered.length)];
-    }
-    return allMultVariants[Math.floor(Math.random() * allMultVariants.length)];
   }
 
   // plusminus
-  if (fact.repetitions === 0 || !allowInverse) {
-    return 'add';
+  switch (operation) {
+    case 'inverse':
+      return 'sub';
+    case 'mix':
+      return Math.random() < 0.5 ? 'add' : 'sub';
+    case 'gap':
+      return 'gap_add_b'; // a + ? = c (strikt keine Minus-Lücke gap_sub_b!)
+    case 'base':
+    default:
+      return 'add';
   }
-  if (fact.repetitions === 1) {
-    return Math.random() < 0.5 ? 'add' : 'sub';
-  }
-  const allPmVariants: PlusMinusVariant[] = [
-    'add',
-    'sub',
-    'gap_add_b', // a + ? = c
-    'gap_sub_b', // c − ? = a
-  ];
-  const unmastered = allPmVariants.filter((v) => !fact.masteredVariants.includes(v));
-  if (unmastered.length > 0) {
-    return unmastered[Math.floor(Math.random() * unmastered.length)];
-  }
-  return allPmVariants[Math.floor(Math.random() * allPmVariants.length)];
 }
 
 export function getMultiplicationStrategyHint(a: number, b: number, c: number): string {

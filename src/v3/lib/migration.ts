@@ -113,6 +113,7 @@ export function convertV2ProfileToV3(p: any, idx = 0): UserProfileV3 {
     fastSolved: typeof v2MultStats.fastSolved === 'number' ? v2MultStats.fastSolved : 0,
     soundEnabled: typeof v2MultStats.soundEnabled === 'boolean' ? v2MultStats.soundEnabled : true,
     sessionSize: 10,
+    practiceOperation: 'base',
   };
 
   const baseMultFacts = generateMultFacts();
@@ -131,6 +132,7 @@ export function convertV2ProfileToV3(p: any, idx = 0): UserProfileV3 {
     fastSolved: typeof v2PmStats.fastSolved === 'number' ? v2PmStats.fastSolved : 0,
     soundEnabled: typeof v2PmStats.soundEnabled === 'boolean' ? v2PmStats.soundEnabled : true,
     sessionSize: 10,
+    practiceOperation: 'base',
   };
 
   const basePmFacts = generatePlusMinusFacts();
