@@ -71,7 +71,7 @@
   function startEdit(prof: UserProfileV3) {
     editingProfileId = prof.id;
     editNameInput = prof.name;
-    editAvatarInput = prof.avatar;
+    editAvatarInput = prof.defaultAvatar || prof.avatar;
   }
 
   function saveEdit() {

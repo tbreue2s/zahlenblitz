@@ -2,7 +2,11 @@
   import { playSuccessSound } from '../lib/audio';
   import type { WorldChapterV3 } from '../lib/chapters';
   import { ALL_STICKERS } from '../lib/stickers';
-  import { countDueFactsV3, getWeakSpotFactsV3 } from '../lib/storage';
+  import {
+    countDueFactsV3,
+    getProfileDefaultAvatar,
+    getWeakSpotFactsV3,
+  } from '../lib/storage';
   import type { FactFamily, GameMode, UserProfileV3, UserStatsV3 } from '../lib/types';
   import ParentalGateModal from './ParentalGateModal.svelte';
   import Heatmap from './Heatmap.svelte';
@@ -388,6 +392,7 @@
     initialUnlockedStickers={activeProfile.unlockedStickers ?? []}
     initialBadge={activeProfile.activeBadge}
     initialAvatar={activeProfile.avatar}
+    defaultAvatar={getProfileDefaultAvatar(activeProfile)}
     {soundEnabled}
     onSave={(unlocked, newStars, newBadge, newAvatar) => {
       onSaveStickers?.(unlocked, newStars, newBadge, newAvatar);

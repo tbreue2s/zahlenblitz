@@ -163,7 +163,7 @@
       return {
         ...prof,
         avatar: newAvatar ?? prof.avatar,
-        activeBadge: newBadge ?? prof.activeBadge,
+        activeBadge: newBadge,
         unlockedStickers,
         multStats: updatedMultStats,
         plusMinusStats: updatedPmStats,
@@ -249,13 +249,23 @@
       ...prof,
       name,
       avatar,
+      defaultAvatar: avatar,
+      activeBadge: undefined,
       activeGameMode: mode,
     }));
   }
 
   function handleUpdateProfile(id: string, name: string, avatar: string) {
     const next = profiles.map((p) =>
-      p.id === id ? { ...p, name: name.trim() || p.name, avatar } : p
+      p.id === id
+        ? {
+            ...p,
+            name: name.trim() || p.name,
+            avatar,
+            defaultAvatar: avatar,
+            activeBadge: undefined,
+          }
+        : p
     );
     persistAll(next, activeProfileId);
   }

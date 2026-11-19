@@ -32,6 +32,16 @@ export const AVAILABLE_AVATARS = [
   '⭐',
 ];
 
+export function getProfileDefaultAvatar(profile: UserProfileV3): string {
+  if (profile.defaultAvatar) {
+    return profile.defaultAvatar;
+  }
+  if (AVAILABLE_AVATARS.includes(profile.avatar)) {
+    return profile.avatar;
+  }
+  return '🦊';
+}
+
 export function getDefaultStatsV3(): UserStatsV3 {
   return {
     stars: 0,
@@ -80,6 +90,7 @@ export function createNewProfileV3(
     id,
     name: name.trim() || 'Spieler 1',
     avatar,
+    defaultAvatar: avatar,
     activeGameMode,
     createdAt: Date.now(),
     multStats: getDefaultStatsV3(),
@@ -124,6 +135,7 @@ export function loadV3ProfilesAndActiveId(): {
 
         const sanitized = parsed.map((p) => ({
           ...p,
+          defaultAvatar: getProfileDefaultAvatar(p),
           unlockedStickers: p.unlockedStickers ?? [],
         }));
         const savedActiveId = window.localStorage.getItem(V3_ACTIVE_PROFILE_ID_KEY);

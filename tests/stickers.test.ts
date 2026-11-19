@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { ALL_STICKERS, getStickersByCategory, STICKER_CATEGORIES } from '../src/v3/lib/stickers';
-import { createNewProfileV3 } from '../src/v3/lib/storage';
+import { createNewProfileV3, getProfileDefaultAvatar } from '../src/v3/lib/storage';
 
 console.log('=== START STICKER TESTS V3 ===');
 
@@ -35,5 +35,23 @@ profile.activeBadge = 'tier_fuchs';
 assert.strictEqual(profile.unlockedStickers.length, 2);
 assert.strictEqual(profile.activeBadge, 'tier_fuchs');
 console.log('✓ Test 3 bestanden: Sticker-Kollektion und Abzeichen lassen sich problemlos im Profil speichern.');
+
+// --- TEST 4: Default-Avatar & Zurücksetzen aus dem Sticker-Menü ---
+assert.strictEqual(profile.defaultAvatar, '🦊', 'Neues Profil muss defaultAvatar auf den Initial-Avatar setzen');
+assert.strictEqual(getProfileDefaultAvatar(profile), '🦊', 'getProfileDefaultAvatar muss den hinterlegten Default-Avatar liefern');
+
+// Simulation: Kind nutzt Sticker als Profilbild
+profile.avatar = '🦄';
+profile.activeBadge = 'magic_unicorn';
+assert.strictEqual(profile.avatar, '🦄');
+assert.strictEqual(profile.defaultAvatar, '🦊', 'defaultAvatar darf beim Setzen eines Stickers nicht überschrieben werden');
+assert.strictEqual(getProfileDefaultAvatar(profile), '🦊');
+
+// Simulation: Kind setzt im Sticker-Menü auf Standard-Avatar zurück
+profile.avatar = profile.defaultAvatar;
+profile.activeBadge = undefined;
+assert.strictEqual(profile.avatar, '🦊', 'Avatar muss wieder dem Standard-Avatar entsprechen');
+assert.strictEqual(profile.activeBadge, undefined, 'Badge muss beim Zurücksetzen gelöscht sein');
+console.log('✓ Test 4 bestanden: Default-Avatar bleibt bei Sticker-Nutzung erhalten und lässt sich jederzeit wiederherstellen.');
 
 console.log('=== ALLE STICKER-TESTS ERFOLGREICH BESTANDEN! ===');

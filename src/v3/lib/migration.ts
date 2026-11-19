@@ -143,6 +143,7 @@ export function convertV2ProfileToV3(p: any, idx = 0): UserProfileV3 {
     id,
     name,
     avatar,
+    defaultAvatar: typeof p.defaultAvatar === 'string' && p.defaultAvatar ? p.defaultAvatar : avatar,
     activeGameMode,
     createdAt: typeof p.createdAt === 'number' ? p.createdAt : Date.now(),
     multStats,
@@ -209,7 +210,10 @@ export function parseProfilesFromJson(rawText: string): {
       'a' in c.multFacts[0] &&
       'b' in c.multFacts[0]
     ) {
-      return c as UserProfileV3;
+      return {
+        ...c,
+        defaultAvatar: c.defaultAvatar || c.avatar || '🦊',
+      } as UserProfileV3;
     }
     // Sonst als v2 konvertieren
     return convertV2ProfileToV3(c, idx);

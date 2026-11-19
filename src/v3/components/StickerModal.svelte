@@ -14,6 +14,7 @@
     initialUnlockedStickers: string[];
     initialBadge?: string;
     initialAvatar: string;
+    defaultAvatar: string;
     soundEnabled: boolean;
     onSave: (
       unlockedStickers: string[],
@@ -53,6 +54,10 @@
     Math.round((unlockedCount / (totalStickerCount || 1)) * 100)
   );
 
+  let isDefaultAvatarActive = $derived(
+    tempAvatar === props.defaultAvatar && !tempBadge
+  );
+
   function handleBuy(sticker: StickerItem) {
     if (tempStars < sticker.cost) return;
     if (tempUnlocked.includes(sticker.id)) return;
@@ -71,6 +76,13 @@
     tempBadge = sticker.id;
     playKeyTap(props.soundEnabled);
     triggerHaptic(15);
+  }
+
+  function handleResetToDefaultAvatar() {
+    tempAvatar = props.defaultAvatar;
+    tempBadge = undefined;
+    playKeyTap(props.soundEnabled);
+    triggerHaptic(20);
   }
 
   function handleSaveClick() {
@@ -154,6 +166,47 @@
           ></div>
         </div>
       </div>
+    </div>
+
+    <!-- Profilbild-Status & Wechsel zu Standard-Avatar -->
+    <div class="p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/70 flex items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="relative w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 border-2 {isDefaultAvatarActive ? 'border-emerald-300 dark:border-emerald-700' : 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-300/40'} flex items-center justify-center text-2xl shadow-2xs shrink-0">
+          <span>{tempAvatar}</span>
+          {#if !isDefaultAvatarActive}
+            <span class="absolute -top-1.5 -right-1.5 text-[10px]" title="Sticker als Profilbild aktiv">✨</span>
+          {/if}
+        </div>
+        <div class="min-w-0">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 block truncate">
+            Profilbild
+          </span>
+          <span class="text-xs font-black text-slate-800 dark:text-slate-100 block truncate">
+            {#if isDefaultAvatarActive}
+              Standard-Avatar ({props.defaultAvatar})
+            {:else}
+              Sticker als Profilbild aktiv
+            {/if}
+          </span>
+        </div>
+      </div>
+
+      {#if !isDefaultAvatarActive}
+        <button
+          type="button"
+          onclick={handleResetToDefaultAvatar}
+          class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-black cursor-pointer flex items-center gap-1.5 transition shrink-0 card-press"
+          title="Zurück zum Standard-Profilbild ({props.defaultAvatar})"
+        >
+          <span>↺</span>
+          <span>Standard ({props.defaultAvatar})</span>
+        </button>
+      {:else}
+        <span class="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950/80 px-2.5 py-1 rounded-xl border border-emerald-300/80 dark:border-emerald-800/80 shrink-0 flex items-center gap-1">
+          <span>✓</span>
+          <span>Aktiv</span>
+        </span>
+      {/if}
     </div>
 
     <!-- Kategorie-Tabs -->
@@ -306,17 +359,31 @@
 
           <div class="flex items-center justify-between gap-2 pt-1 border-t border-indigo-200/60 dark:border-indigo-800/40">
             {#if isUnlocked}
-              <button
-                type="button"
-                onclick={() => selectedStickerForDetail && handleSetAvatar(selectedStickerForDetail)}
-                class="w-full py-1.5 px-3 rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1.5 transition {
-                  isSelectedAvatar
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                }"
-              >
-                <span>{isSelectedAvatar ? '👑 Aktuelles Profil-Bild' : '✨ Als Profil-Bild nutzen'}</span>
-              </button>
+              <div class="flex gap-2 w-full">
+                <button
+                  type="button"
+                  onclick={() => selectedStickerForDetail && handleSetAvatar(selectedStickerForDetail)}
+                  class="flex-1 py-1.5 px-3 rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1.5 transition {
+                    isSelectedAvatar
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  }"
+                >
+                  <span>{isSelectedAvatar ? '👑 Als Profilbild aktiv' : '✨ Als Profilbild nutzen'}</span>
+                </button>
+
+                {#if isSelectedAvatar}
+                  <button
+                    type="button"
+                    onclick={handleResetToDefaultAvatar}
+                    class="py-1.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-black border-none cursor-pointer flex items-center gap-1 transition shrink-0 card-press"
+                    title="Zurück zum Standard-Profilbild ({props.defaultAvatar})"
+                  >
+                    <span>↺</span>
+                    <span>Standard ({props.defaultAvatar})</span>
+                  </button>
+                {/if}
+              </div>
             {:else if canAfford}
               <button
                 type="button"

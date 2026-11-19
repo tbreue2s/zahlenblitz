@@ -89,6 +89,7 @@ export interface UserProfileV3 {
   id: string;
   name: string;
   avatar: string;
+  defaultAvatar?: string;         // Standard-Profilbild (beim Anlegen oder in den Einstellungen gewählt)
   activeGameMode: GameMode;
   freeWorldChoice?: boolean;
   createdAt: number;
