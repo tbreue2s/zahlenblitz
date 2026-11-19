@@ -3,7 +3,6 @@
   import {
     getAccessibleFactsPoolV3,
     getFactWorld,
-    getWorldChaptersV3,
     type WorldChapterV3,
   } from '../lib/chapters';
   import type {
@@ -11,6 +10,7 @@
     FactVisualStatus,
     GameMode,
     PracticeOperation,
+    PracticeWorldScope,
   } from '../lib/types';
 
   interface Props {
@@ -18,6 +18,7 @@
     facts: FactFamily[];
     freeWorldChoice?: boolean;
     practiceOperation?: PracticeOperation;
+    practiceWorldScope?: PracticeWorldScope;
     onPracticeFact?: (fact: FactFamily) => void;
     onStartChapterSession?: (chapter: WorldChapterV3) => void;
     onStartRowSession?: (rowNumber: number) => void;
@@ -28,6 +29,7 @@
     facts,
     freeWorldChoice = false,
     practiceOperation = 'base',
+    practiceWorldScope = 1,
     onPracticeFact,
     onStartChapterSession,
     onStartRowSession,
@@ -49,14 +51,18 @@
 
   let selectedFact = $state<FactFamily | null>(null);
   let hoveredCell = $state<{ a: number; b: number } | null>(null);
-  let selectedWorldFilter = $state<0 | 1 | 2 | 3>(0);
   let selectedRowOrCol = $state<number | null>(null);
   let lockedPromptFact = $state<FactFamily | null>(null);
   let showLegendModal = $state(false);
 
   let accessiblePool = $derived(getAccessibleFactsPoolV3(facts, gameMode, freeWorldChoice));
   let unlockedWorldCount = $derived(accessiblePool.unlockedWorldCount);
-  let chapters = $derived(getWorldChaptersV3(facts, gameMode));
+
+  let activeWorldFilter = $derived.by(() => {
+    if (selectedRowOrCol !== null) return 0;
+    if (practiceWorldScope === 'all') return 0;
+    return practiceWorldScope;
+  });
 
   function getFactForCell(a: number, b: number): FactFamily | undefined {
     return facts.find((f) => f.a === a && f.b === b);
@@ -67,19 +73,12 @@
     return getFactWorld(f) > unlockedWorldCount;
   }
 
-  function handleSelectWorld(w: 0 | 1 | 2 | 3) {
-    selectedWorldFilter = selectedWorldFilter === w ? 0 : w;
-    selectedRowOrCol = null;
-    selectedFact = null;
-  }
-
   function handleToggleRowOrCol(n: number) {
     if (selectedRowOrCol === n) {
       selectedRowOrCol = null;
     } else {
       selectedRowOrCol = n;
       selectedFact = null;
-      selectedWorldFilter = 0;
     }
   }
 
@@ -113,101 +112,26 @@
 </script>
 
 <section class="bg-white dark:bg-[#1c1c1e] rounded-[22px] p-3.5 sm:p-4 border border-black/[0.07] dark:border-white/[0.07] space-y-2.5" aria-label="10x10 Rechentafel">
-  <!-- Welten-Auswahl & Legende (alles kompakt auf einer Zeile, ohne horizontales Scrollen) -->
-  <div class="flex items-center justify-between gap-1.5 flex-wrap">
-    <div class="flex items-center gap-1 text-xs">
-      <button
-        type="button"
-        onclick={() => handleSelectWorld(0)}
-        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer {
-          selectedWorldFilter === 0 && selectedRowOrCol === null
-            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
-            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
-        }"
-      >
-        Alle
-      </button>
-
-      <button
-        type="button"
-        onclick={() => handleSelectWorld(1)}
-        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer {
-          selectedWorldFilter === 1
-            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
-            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
-        }"
-      >
-        Welt 1
-      </button>
-
-      <button
-        type="button"
-        onclick={() => handleSelectWorld(2)}
-        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 {
-          selectedWorldFilter === 2
-            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
-            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
-        }"
-      >
-        <span>Welt 2</span>
-        {#if unlockedWorldCount < 2}
-          <span class="text-[9px]">🔒</span>
-        {/if}
-      </button>
-
-      <button
-        type="button"
-        onclick={() => handleSelectWorld(3)}
-        class="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 {
-          selectedWorldFilter === 3
-            ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
-            : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#6b7280] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
-        }"
-      >
-        <span>Welt 3</span>
-        {#if unlockedWorldCount < 3}
-          <span class="text-[9px]">🔒</span>
-        {/if}
-      </button>
-    </div>
+  <!-- Kopfzeile: Titel links, Legenden-Button rechts (kompakt ohne Platzverschwendung) -->
+  <div class="flex items-center justify-between px-0.5">
+    <h3 class="text-xs font-black uppercase tracking-wider text-[#6b7280] dark:text-[#98989f] m-0">
+      Rechentafel (10×10)
+    </h3>
 
     <!-- Legende Button -->
     <button
       type="button"
       onclick={() => (showLegendModal = true)}
-      class="text-[11px] font-bold text-[#0a6cff] dark:text-[#4c9aff] bg-[#e8f0ff] dark:bg-[#4c9aff]/15 border-none px-2.5 py-1.5 rounded-full cursor-pointer hover:bg-[#d6e5ff] dark:hover:bg-[#4c9aff]/25 transition flex items-center gap-1 shrink-0"
+      class="text-[11px] font-bold text-[#0a6cff] dark:text-[#4c9aff] bg-[#e8f0ff] dark:bg-[#4c9aff]/15 border-none px-2.5 py-1 rounded-full cursor-pointer hover:bg-[#d6e5ff] dark:hover:bg-[#4c9aff]/25 transition flex items-center gap-1 shrink-0"
+      aria-label="Farblegende anzeigen"
     >
       <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
       <span>Legende</span>
     </button>
   </div>
 
-  <!-- Didaktischer Erklär-Banner für aktive Welt (bei Klick auf Welt 1, 2 oder 3) -->
-  {#if selectedWorldFilter === 1}
-    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 p-2.5 rounded-2xl border border-[#0a6cff]/25 dark:border-[#4c9aff]/30 animate-fade-in flex items-center gap-2">
-      <span class="text-base shrink-0">🥉</span>
-      <span><strong>Welt 1 ({gameMode === 'mult' ? 'Kernaufgaben' : 'Basis bis 10'}):</strong> {gameMode === 'mult' ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.' : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.'}</span>
-    </div>
-  {:else if selectedWorldFilter === 2}
-    <div class="text-[10px] text-slate-700 dark:text-slate-200 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 p-2.5 rounded-2xl border border-[#0a6cff]/25 dark:border-[#4c9aff]/30 animate-fade-in flex items-center gap-2">
-      <span class="text-base shrink-0">🥈</span>
-      <span><strong>Welt 2 ({gameMode === 'mult' ? 'Forscherreihen' : 'Doppelgänger & Nachbarn'}):</strong> {gameMode === 'mult' ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.' : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.'}</span>
-    </div>
-  {:else if selectedWorldFilter === 3}
-    <div class="text-[10px] text-amber-900 dark:text-amber-200 bg-amber-50/80 dark:bg-amber-950/50 p-2.5 rounded-2xl border border-amber-200/60 dark:border-amber-800/60 animate-fade-in flex items-center gap-2">
-      <span class="text-base shrink-0">🥇</span>
-      <span><strong>Welt 3 ({gameMode === 'mult' ? 'Königsaufgaben' : 'Zehnerübergang'}):</strong> {gameMode === 'mult' ? 'Die 16 anspruchsvollsten Königsaufgaben der Reihen 6, 7, 8 und 9 (z. B. 7 × 8 = 56).' : 'Der Zehnerübergang (Zehnerstopp über die 10, z. B. 8 + 5 = 13).'}</span>
-    </div>
-  {/if}
-
-  <!-- 11x11 Matrix Grid (Zahlen oben und links für volle Übersicht) -->
+  <!-- 11x11 Matrix Grid -->
   <div class="w-full overflow-x-auto pb-1">
-    <!-- Achsen-Beschriftung zur Orientierung -->
-    <div class="flex items-center justify-between text-[11px] text-[#6b7280] dark:text-[#98989f] font-bold max-w-sm mx-auto px-1.5 pb-1.5">
-      <span>1. Zahl ↓</span>
-      <span>2. Zahl →</span>
-    </div>
-
     <div class="grid grid-cols-11 gap-0.5 sm:gap-1 min-w-[280px] max-w-sm mx-auto p-2 bg-[#f6f7f9] dark:bg-[#111113] rounded-[20px] select-none">
       
       <!-- Obere linke Ecke (Operator) -->
@@ -216,9 +140,8 @@
         onclick={() => {
           selectedRowOrCol = null;
           selectedFact = null;
-          selectedWorldFilter = 0;
         }}
-        title="Auswahl aufheben (Alle anzeigen)"
+        title="Auswahl aufheben"
         aria-label="Auswahl aufheben"
         class="aspect-square rounded-[8px] bg-[#0a6cff] dark:bg-[#4c9aff] dark:text-[#00112b] text-white flex items-center justify-center text-[10px] sm:text-xs font-black border-none cursor-pointer hover:bg-[#2b7fff] transition"
       >
@@ -267,7 +190,7 @@
           {@const vis = getVisual(a, b)}
           {@const world = fact ? getFactWorld(fact) : 1}
           {@const locked = isFactLocked(fact)}
-          {@const isWorldDimmed = selectedWorldFilter > 0 && world !== selectedWorldFilter}
+          {@const isWorldDimmed = activeWorldFilter > 0 && world !== activeWorldFilter}
           {@const isRowDimmed = selectedRowOrCol !== null && a !== selectedRowOrCol && b !== selectedRowOrCol}
           {@const isDimmed = isWorldDimmed || isRowDimmed}
           {@const isSelected = selectedFact?.a === a && selectedFact?.b === b}
@@ -404,50 +327,6 @@
         </button>
       {/if}
     </div>
-  {:else if selectedWorldFilter > 0}
-    <!-- 3. Welt ausgewählt (Welt 1, 2 oder 3) -->
-    {@const activeChapter = chapters[selectedWorldFilter - 1]}
-    {@const isLocked = selectedWorldFilter > unlockedWorldCount}
-    {#if activeChapter}
-      <div class="mt-2.5 p-2.5 sm:p-3 bg-[#e8f0ff] dark:bg-[#4c9aff]/15 rounded-2xl border-2 border-[#0a6cff]/25 dark:border-[#4c9aff]/30 flex items-center justify-between gap-2 animate-fade-in shadow-sm">
-        <div class="truncate min-w-0">
-          <div class="text-xs sm:text-sm font-black text-[#0f1115] dark:text-white flex items-center gap-1.5 truncate">
-            <span class="text-base">{activeChapter.icon}</span>
-            <span>{activeChapter.title}</span>
-            {#if isLocked}
-              <span class="text-xs">🔒</span>
-            {/if}
-          </div>
-          <div class="text-[10px] text-[#0a6cff] dark:text-[#4c9aff] font-semibold truncate">
-            {activeChapter.subtitle} · Modus: {opLabel}
-          </div>
-        </div>
-        {#if onStartChapterSession}
-          {#if isLocked}
-            <button
-              type="button"
-              onclick={() => {
-                lockedPromptFact = activeChapter.facts[0];
-              }}
-              class="shrink-0 px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold border-none cursor-pointer flex items-center gap-1"
-            >
-              <span>🔒 Gesperrt</span>
-            </button>
-          {:else}
-            <button
-              type="button"
-              onclick={() => {
-                onStartChapterSession(activeChapter);
-              }}
-              class="shrink-0 px-3.5 py-2 rounded-xl bg-[#0a6cff] hover:bg-[#2b7fff] dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] text-white text-xs font-black border-none cursor-pointer shadow-sm transition flex items-center gap-1.5 tactile-btn"
-            >
-              <span>▶</span>
-              <span>Welt {selectedWorldFilter} üben</span>
-            </button>
-          {/if}
-        {/if}
-      </div>
-    {/if}
   {/if}
 </section>
 

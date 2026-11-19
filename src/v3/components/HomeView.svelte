@@ -140,6 +140,53 @@
     return gameMode === 'mult' ? 'Welt 3 (Königsaufgaben)' : 'Welt 3 (Zehnerübergang)';
   });
 
+  let worldInfo = $derived.by(() => {
+    if (effectiveWorldScope === 1) {
+      return {
+        icon: '🥉',
+        title: gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)',
+        desc:
+          gameMode === 'mult'
+            ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.'
+            : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.',
+      };
+    }
+    if (effectiveWorldScope === 2) {
+      return {
+        icon: '🥈',
+        title:
+          gameMode === 'mult'
+            ? 'Welt 2 (Forscherreihen)'
+            : 'Welt 2 (Doppelgänger & Nachbarn)',
+        desc:
+          gameMode === 'mult'
+            ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.'
+            : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.',
+      };
+    }
+    if (effectiveWorldScope === 3) {
+      return {
+        icon: '🥇',
+        title:
+          gameMode === 'mult'
+            ? 'Welt 3 (Königsaufgaben)'
+            : 'Welt 3 (Zehnerübergang)',
+        desc:
+          gameMode === 'mult'
+            ? 'Die 16 anspruchsvollsten Königsaufgaben der Reihen 6, 7, 8 und 9 (z. B. 7 × 8 = 56).'
+            : 'Der Zehnerübergang (Zehnerstopp über die 10, z. B. 8 + 5 = 13).',
+      };
+    }
+    return {
+      icon: '🌟',
+      title: 'Alle Welten',
+      desc:
+        gameMode === 'mult'
+          ? 'Gemischtes Training über alle deine bisher freigeschalteten Reihen.'
+          : 'Gemischtes Training über das gesamte Zahlen-Held-Spektrum.',
+    };
+  });
+
   let activeOperationSummary = $derived(
     operationOptions.find((o) => o.id === practiceOperation)?.fullLabel ??
       operationOptions[0].fullLabel
@@ -439,6 +486,12 @@
           🔒 Welt {lockedWorldNotice} schaltet sich frei, sobald 80 % von Welt {lockedWorldNotice - 1} hellgrün sind (oder über Optionen → Lernpfad: Frei).
         </div>
       {/if}
+
+      <!-- Didaktische Beschreibung der ausgewählten Welt (direkt vor 'Los geht's') -->
+      <div class="text-[11px] leading-relaxed text-[#4b5563] dark:text-slate-300 bg-[#f6f7f9] dark:bg-white/[0.05] p-2.5 rounded-2xl border border-black/[0.05] dark:border-white/[0.07] flex items-center gap-2 animate-fade-in">
+        <span class="text-base shrink-0">{worldInfo.icon}</span>
+        <span><strong>{worldInfo.title}:</strong> {worldInfo.desc}</span>
+      </div>
     </div>
 
     <button
@@ -456,6 +509,7 @@
     {gameMode}
     {facts}
     {practiceOperation}
+    practiceWorldScope={effectiveWorldScope}
     freeWorldChoice={activeProfile.freeWorldChoice ?? false}
     onPracticeFact={onPracticeFact}
     onStartChapterSession={onStartChapterSession}
