@@ -412,7 +412,10 @@ export function buildDailySessionQueueV3(
     (f) => isOperationUnmasteredV3(f, operation) && !dueIds.has(f.id)
   );
 
-  const unlearned = orderUnlearnedFactsV3(unlearnedRaw, mode, effectiveScope === 'all');
+  const isMultiWorldScope =
+    effectiveScope === 'all' ||
+    (Array.isArray(effectiveScope) && effectiveScope.length > 1);
+  const unlearned = orderUnlearnedFactsV3(unlearnedRaw, mode, isMultiWorldScope);
 
   // 3. Zukünftige Festigungs-Fakten (nur aus dem gewählten Welten-Scope)
   const upcoming = facts

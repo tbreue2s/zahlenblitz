@@ -379,7 +379,18 @@ for (const item of rowBaseQueue) {
   assert.strictEqual(item.variant, 'add', 'buildRowSessionQueueV3 darf bei operation=base nur add liefern');
 }
 
-console.log('✓ Test 5 bestanden: Welten-Isolation, explizite Rechenart-Treue, freie Weltenwahl & Reihen-Training funktionieren.');
+// Kombinierbare Mehrfach-Auswahl der Welten: z. B. Welt 2 & 3 zusammen (ohne Welt 1!)
+const world2And3Queue = buildDailySessionQueueV3(freshMultFacts, 20, Date.now(), true, ['base', 'inverse'], [2, 3]);
+assert.strictEqual(world2And3Queue.length, 20);
+const seenWorlds23 = new Set<number>();
+for (const item of world2And3Queue) {
+  const w = getFactWorld(item.fact);
+  seenWorlds23.add(w);
+  assert.ok(w === 2 || w === 3, `Bei worldScope=[2, 3] darf Welt 1 nicht vorkommen, erhalten: Welt ${w}`);
+}
+assert.ok(seenWorlds23.has(2) && seenWorlds23.has(3), 'Bei worldScope=[2, 3] müssen sowohl Welt 2 als auch Welt 3 vertreten sein');
+
+console.log('✓ Test 5 bestanden: Welten-Isolation, Mehrfach-Weltenwahl, explizite Rechenart-Treue & Reihen-Training funktionieren.');
 
 // --- TEST 6: Wackelkandidaten & 60s Blitz-Challenge ---
 const factsWithFlaws = generateMultFacts().map((f, i) => {

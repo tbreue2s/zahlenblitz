@@ -12,6 +12,7 @@
     GameMode,
     PracticeOperation,
     PracticeWorldScope,
+    WorldNumber,
   } from '../lib/types';
 
   interface Props {
@@ -49,10 +50,11 @@
   let accessiblePool = $derived(getAccessibleFactsPoolV3(facts, gameMode, freeWorldChoice));
   let unlockedWorldCount = $derived(accessiblePool.unlockedWorldCount);
 
-  let activeWorldFilter = $derived.by(() => {
-    if (selectedRowOrCol !== null) return 0;
-    if (practiceWorldScope === 'all') return 0;
-    return practiceWorldScope;
+  let activeWorldFilters = $derived.by<WorldNumber[]>(() => {
+    if (selectedRowOrCol !== null) return [];
+    if (practiceWorldScope === 'all') return [];
+    if (Array.isArray(practiceWorldScope)) return practiceWorldScope;
+    return [practiceWorldScope];
   });
 
   function getFactForCell(a: number, b: number): FactFamily | undefined {
@@ -181,7 +183,7 @@
           {@const vis = getVisual(a, b)}
           {@const world = fact ? getFactWorld(fact) : 1}
           {@const locked = isFactLocked(fact)}
-          {@const isWorldDimmed = activeWorldFilter > 0 && world !== activeWorldFilter}
+          {@const isWorldDimmed = activeWorldFilters.length > 0 && !activeWorldFilters.includes(world)}
           {@const isRowDimmed = selectedRowOrCol !== null && a !== selectedRowOrCol && b !== selectedRowOrCol}
           {@const isDimmed = isWorldDimmed || isRowDimmed}
           {@const isSelected = selectedFact?.a === a && selectedFact?.b === b}

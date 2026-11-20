@@ -6,6 +6,7 @@ import type {
   PracticeOperation,
   PracticeWorldScope,
   TaskVariant,
+  WorldNumber,
 } from './types';
 
 export interface StarProgressV3 {
@@ -223,8 +224,55 @@ export function isOperationUnmasteredV3(
 }
 
 /**
- * Filtert die freigeschalteten Fakten strikt auf den gewählten Welten-Scope (`1 | 2 | 3 | 'all'`).
- * Sicherer Fallback: Wenn die gewählte Welt noch gesperrt ist, wird auf die höchste freigeschaltete Welt geclampt.
+ * Normalisiert einen Welten-Scope (`1 | 2 | 3 | 'all' | WorldNumber[]`) auf ein sortiertes
+ * Array aktiver, freigeschalteter Welten (mindestens 1 Welt).
+ */
+export function normalizeWorldScope(
+  scope: PracticeWorldScope | undefined,
+  unlockedWorldCount: number,
+  freeWorldChoice = false
+): WorldNumber[] {
+  const maxW = Math.max(1, Math.min(3, unlockedWorldCount));
+  const allUnlocked = ([1, 2, 3] as WorldNumber[]).filter((w) => w <= maxW);
+
+  if (scope === undefined) {
+    return freeWorldChoice ? allUnlocked : [1];
+  }
+  if (scope === 'all') {
+    return allUnlocked;
+  }
+  if (Array.isArray(scope)) {
+    const valid = ([1, 2, 3] as WorldNumber[]).filter(
+      (w) => w <= maxW && scope.includes(w)
+    );
+    return valid.length > 0 ? valid : [maxW as WorldNumber];
+  }
+  const clamped = Math.min(scope, maxW) as WorldNumber;
+  return [clamped];
+}
+
+/**
+ * Formatiert aktive Welten für Zusammenfassungen und Buttons.
+ */
+export function formatWorldScopeSummary(
+  worlds: WorldNumber[],
+  gameMode: GameMode
+): string {
+  if (worlds.length === 1) {
+    const w = worlds[0];
+    if (w === 1) return gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)';
+    if (w === 2) return gameMode === 'mult' ? 'Welt 2 (Forscherreihen)' : 'Welt 2 (Verdoppeln & Zehner)';
+    return gameMode === 'mult' ? 'Welt 3 (Königsaufgaben)' : 'Welt 3 (Zehnerübergang)';
+  }
+  if (worlds.length === 2) {
+    return `Welt ${worlds[0]} & ${worlds[1]}`;
+  }
+  return 'Alle Welten';
+}
+
+/**
+ * Filtert die freigeschalteten Fakten strikt auf den gewählten Welten-Scope (`1 | 2 | 3 | 'all' | WorldNumber[]`).
+ * Sicherer Fallback: Wenn eine gewählte Welt noch gesperrt ist, wird auf freigeschaltete Welten geclampt.
  */
 export function getScopedFactsV3(
   facts: FactFamily[],
@@ -243,15 +291,17 @@ export function getScopedFactsV3(
     freeWorldChoice
   );
 
-  let effectiveScope: PracticeWorldScope = worldScope ?? (freeWorldChoice ? 'all' : 1);
-  if (typeof effectiveScope === 'number' && effectiveScope > unlockedWorldCount) {
-    effectiveScope = unlockedWorldCount as 1 | 2 | 3;
+  const activeWorlds = normalizeWorldScope(worldScope, unlockedWorldCount, freeWorldChoice);
+  let effectiveScope: PracticeWorldScope;
+  if (activeWorlds.length === 1) {
+    effectiveScope = activeWorlds[0];
+  } else if (worldScope === 'all' && activeWorlds.length === unlockedWorldCount) {
+    effectiveScope = 'all';
+  } else {
+    effectiveScope = activeWorlds;
   }
 
-  const scopedFacts =
-    effectiveScope === 'all'
-      ? accessibleFacts
-      : accessibleFacts.filter((f) => getFactWorld(f) === effectiveScope);
+  const scopedFacts = accessibleFacts.filter((f) => activeWorlds.includes(getFactWorld(f)));
 
   return {
     scopedFacts,

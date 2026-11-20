@@ -132,7 +132,9 @@
       ...mStats,
       practiceWorldScope: nextScope,
       acknowledgedUnlockedWorld:
-        nextScope === 'all' || nextScope === unlockedWorldCount
+        nextScope === 'all' ||
+        nextScope === unlockedWorldCount ||
+        (Array.isArray(nextScope) && nextScope.includes(unlockedWorldCount as 1 | 2 | 3))
           ? Math.max(mStats.acknowledgedUnlockedWorld ?? 1, unlockedWorldCount)
           : mStats.acknowledgedUnlockedWorld,
     }));

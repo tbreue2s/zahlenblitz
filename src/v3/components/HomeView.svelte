@@ -1,6 +1,10 @@
 <script lang="ts">
   import { playKeyTap, playSuccessSound } from '../lib/audio';
-  import type { WorldChapterV3 } from '../lib/chapters';
+  import {
+    formatWorldScopeSummary,
+    normalizeWorldScope,
+    type WorldChapterV3,
+  } from '../lib/chapters';
   import {
     formatPracticeOperationsLabel,
     normalizePracticeOperations,
@@ -19,6 +23,7 @@
     PracticeWorldScope,
     UserProfileV3,
     UserStatsV3,
+    WorldNumber,
   } from '../lib/types';
   import ParentalGateModal from './ParentalGateModal.svelte';
   import Heatmap from './Heatmap.svelte';
@@ -104,12 +109,19 @@
   let showNoWeakSpotsModal = $state(false);
   let lockedWorldNotice = $state<number | null>(null);
 
+  let activeWorlds = $derived(
+    normalizeWorldScope(
+      effectiveWorldScope,
+      unlockedWorldCount,
+      activeProfile.freeWorldChoice ?? false
+    )
+  );
+
   let showUnlockBanner = $derived(
     !(activeProfile.freeWorldChoice ?? false) &&
       unlockedWorldCount > 1 &&
       (stats.acknowledgedUnlockedWorld ?? 1) < unlockedWorldCount &&
-      effectiveWorldScope !== unlockedWorldCount &&
-      effectiveWorldScope !== 'all'
+      !activeWorlds.includes(unlockedWorldCount as WorldNumber)
   );
 
   let operationOptions = $derived<
@@ -141,54 +153,72 @@
     }
   }
 
-  let activeWorldSummary = $derived.by(() => {
-    if (effectiveWorldScope === 'all') {
-      return unlockedWorldCount < 3 ? 'Alle freigeschalteten Welten' : 'Alle Welten';
+  function toggleWorld(w: WorldNumber) {
+    playKeyTap(soundEnabled);
+    if (w > unlockedWorldCount) {
+      lockedWorldNotice = lockedWorldNotice === w ? null : w;
+      return;
     }
-    if (effectiveWorldScope === 1) {
-      return gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)';
+    lockedWorldNotice = null;
+    if (activeWorlds.includes(w)) {
+      if (activeWorlds.length <= 1) return; // Mindestens eine Welt bleibt immer aktiv
+      onSelectWorldScope?.(activeWorlds.filter((x) => x !== w));
+    } else {
+      const order: WorldNumber[] = [1, 2, 3];
+      onSelectWorldScope?.(order.filter((x) => x === w || activeWorlds.includes(x)));
     }
-    if (effectiveWorldScope === 2) {
-      return gameMode === 'mult'
-        ? 'Welt 2 (Forscherreihen)'
-        : 'Welt 2 (Verdoppeln & Zehner)';
-    }
-    return gameMode === 'mult' ? 'Welt 3 (Königsaufgaben)' : 'Welt 3 (Zehnerübergang)';
-  });
+  }
+
+  let activeWorldSummary = $derived(
+    formatWorldScopeSummary(activeWorlds, gameMode)
+  );
+
+  let activeWorldShortLabel = $derived(
+    activeWorlds.length === 3
+      ? 'allen Welten'
+      : activeWorlds.length === 2
+      ? `Welt ${activeWorlds[0]} & ${activeWorlds[1]}`
+      : `Welt ${activeWorlds[0]}`
+  );
 
   let isPreviewLockedWorld = $derived(
     lockedWorldNotice !== null && lockedWorldNotice > unlockedWorldCount
   );
 
   let displayedWorldScope = $derived<PracticeWorldScope>(
-    isPreviewLockedWorld ? (lockedWorldNotice as 1 | 2 | 3) : effectiveWorldScope
+    isPreviewLockedWorld ? (lockedWorldNotice as WorldNumber) : activeWorlds
   );
 
   let worldInfo = $derived.by(() => {
-    if (displayedWorldScope === 1) {
-      return {
-        icon: '🥉',
-        title: gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)',
-        desc:
-          gameMode === 'mult'
-            ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.'
-            : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.',
-      };
-    }
-    if (displayedWorldScope === 2) {
-      return {
-        icon: '🥈',
-        title:
-          gameMode === 'mult'
-            ? 'Welt 2 (Forscherreihen)'
-            : 'Welt 2 (Doppelgänger & Nachbarn)',
-        desc:
-          gameMode === 'mult'
-            ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.'
-            : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.',
-      };
-    }
-    if (displayedWorldScope === 3) {
+    const worldsToDescribe: WorldNumber[] = isPreviewLockedWorld
+      ? [lockedWorldNotice as WorldNumber]
+      : activeWorlds;
+
+    if (worldsToDescribe.length === 1) {
+      const w = worldsToDescribe[0];
+      if (w === 1) {
+        return {
+          icon: '🥉',
+          title: gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)',
+          desc:
+            gameMode === 'mult'
+              ? 'Reihen 1, 2, 5 und 10 bilden das solide Kreuz-Skelett der 100er-Tafel.'
+              : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.',
+        };
+      }
+      if (w === 2) {
+        return {
+          icon: '🥈',
+          title:
+            gameMode === 'mult'
+              ? 'Welt 2 (Forscherreihen)'
+              : 'Welt 2 (Doppelgänger & Nachbarn)',
+          desc:
+            gameMode === 'mult'
+              ? 'Reihen 3 & 4 nutzen geschicktes Verdoppeln und Nachbar-Beziehungen zur Basis.'
+              : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.',
+        };
+      }
       return {
         icon: '🥇',
         title:
@@ -201,12 +231,24 @@
             : 'Der Zehnerübergang (Zehnerstopp über die 10, z. B. 8 + 5 = 13).',
       };
     }
+
+    if (worldsToDescribe.length === 2) {
+      return {
+        icon: '🌟',
+        title: `Welt ${worldsToDescribe[0]} & ${worldsToDescribe[1]}`,
+        desc:
+          gameMode === 'mult'
+            ? `Gemischtes Training aus den Reihen von Welt ${worldsToDescribe[0]} und Welt ${worldsToDescribe[1]}.`
+            : `Gemischtes Training aus Welt ${worldsToDescribe[0]} und Welt ${worldsToDescribe[1]}.`,
+      };
+    }
+
     return {
       icon: '🌟',
       title: 'Alle Welten',
       desc:
         gameMode === 'mult'
-          ? 'Gemischtes Training über alle deine bisher freigeschalteten Reihen.'
+          ? 'Gemischtes Training über alle Reihen der 100er-Tafel.'
           : 'Gemischtes Training über das gesamte Zahlen-Held-Spektrum.',
     };
   });
@@ -451,60 +493,34 @@
         {/each}
       </div>
 
-      <!-- 2. Welten-Auswahl (kompakte Pills) -->
-      <div class="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Rechenwelt auswählen">
+      <!-- 2. Welten-Auswahl (3 frei kombinierbare Toggle-Buttons, analog zu den Rechenarten) -->
+      <div class="grid grid-cols-3 gap-2" role="group" aria-label="Rechenwelten kombinieren">
         {#each [1, 2, 3] as const as w (w)}
           {@const isLocked = w > unlockedWorldCount}
           {@const isPreviewWorld = isLocked && lockedWorldNotice === w}
-          {@const isSelectedWorld = effectiveWorldScope === w && !isPreviewLockedWorld}
+          {@const isSelectedWorld = !isPreviewLockedWorld && activeWorlds.includes(w)}
           <button
             type="button"
-            onclick={() => {
-              playKeyTap(soundEnabled);
-              if (isLocked) {
-                lockedWorldNotice = lockedWorldNotice === w ? null : w;
-              } else {
-                lockedWorldNotice = null;
-                onSelectWorldScope?.(w);
-              }
-            }}
+            onclick={() => toggleWorld(w)}
             aria-pressed={isSelectedWorld || isPreviewWorld}
-            class="text-[11px] font-extrabold px-3 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 active:scale-95 {
+            class="py-1.5 px-2 rounded-2xl border text-[11px] font-extrabold transition cursor-pointer flex items-center justify-center gap-1 active:scale-95 {
               isSelectedWorld
                 ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
                 : isPreviewWorld
                 ? 'bg-[#e8f0ff] dark:bg-[#4c9aff]/20 text-[#0a6cff] dark:text-[#4c9aff] border-[#0a6cff] dark:border-[#4c9aff]'
                 : isLocked
                 ? 'bg-[#f6f7f9] dark:bg-white/[0.04] text-[#9aa1ad] dark:text-[#6c6c74] border-transparent hover:text-[#4b5563] dark:hover:text-slate-300'
-                : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
+                : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white opacity-75 hover:opacity-100'
             }"
           >
             <span>Welt {w}</span>
             {#if isLocked}
               <span class="text-[9.5px]">🔒</span>
+            {:else if isSelectedWorld}
+              <span class="text-[10px] font-black leading-none" aria-hidden="true">✓</span>
             {/if}
           </button>
         {/each}
-
-        {#if unlockedWorldCount >= 2}
-          {@const isAllSelected = effectiveWorldScope === 'all' && !isPreviewLockedWorld}
-          <button
-            type="button"
-            onclick={() => {
-              playKeyTap(soundEnabled);
-              lockedWorldNotice = null;
-              onSelectWorldScope?.('all');
-            }}
-            aria-pressed={isAllSelected}
-            class="text-[11px] font-extrabold px-3 py-1.5 rounded-full border transition cursor-pointer active:scale-95 {
-              isAllSelected
-                ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
-                : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
-            }"
-          >
-            Alle
-          </button>
-        {/if}
       </div>
 
       {#if isPreviewLockedWorld}
@@ -513,7 +529,7 @@
         </div>
       {/if}
 
-      <!-- Didaktische Beschreibung der ausgewählten (oder vorgewählten) Welt -->
+      <!-- Didaktische Beschreibung der ausgewählten (oder vorgewählten) Welt(en) -->
       <div class="text-[11px] leading-relaxed text-[#4b5563] dark:text-slate-300 bg-[#f6f7f9] dark:bg-white/[0.05] p-2.5 rounded-2xl border border-black/[0.05] dark:border-white/[0.07] flex items-center gap-2 animate-fade-in">
         <span class="text-base shrink-0">{worldInfo.icon}</span>
         <span><strong>{worldInfo.title}:</strong> {worldInfo.desc}</span>
@@ -528,7 +544,7 @@
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5l12 7.5-12 7.5z"/></svg>
       <span>
         {#if isPreviewLockedWorld}
-          Mit Welt {effectiveWorldScope === 'all' ? `1–${unlockedWorldCount}` : effectiveWorldScope} starten
+          Mit {activeWorldShortLabel} starten
         {:else}
           Los geht’s
         {/if}
