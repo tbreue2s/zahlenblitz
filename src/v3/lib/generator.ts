@@ -5,6 +5,7 @@ import type {
   FactFamily,
   GameMode,
   MultVariant,
+  OperationKind,
   PlusMinusVariant,
   PracticeOperation,
   TaskVariant,
@@ -91,44 +92,72 @@ export function generateMultFacts(): FactFamily[] {
 }
 
 /**
+ * Normalisiert beliebige Legacy- oder Array-Angaben (`'mix'`, `'base'`, `['base', 'gap']`, ...)
+ * auf ein dedupliziertes Array aus mindestens einer `OperationKind`.
+ */
+export function normalizePracticeOperations(
+  operation: PracticeOperation = 'base'
+): OperationKind[] {
+  if (Array.isArray(operation)) {
+    const order: OperationKind[] = ['base', 'inverse', 'gap'];
+    const valid = order.filter((k) => operation.includes(k));
+    return valid.length > 0 ? valid : ['base'];
+  }
+  if (operation === 'mix') return ['base', 'inverse'];
+  if (operation === 'inverse') return ['inverse'];
+  if (operation === 'gap') return ['gap'];
+  return ['base'];
+}
+
+/**
+ * Formatiert die aktuell ausgewählten Rechenarten als lesbaren Text.
+ */
+export function formatPracticeOperationsLabel(
+  operation: PracticeOperation,
+  gameMode: GameMode,
+  short = false
+): string {
+  const ops = normalizePracticeOperations(operation);
+  const names: Record<OperationKind, string> =
+    gameMode === 'mult'
+      ? { base: 'Mal', inverse: 'Geteilt', gap: 'Lücken' }
+      : { base: 'Plus', inverse: 'Minus', gap: 'Lücken' };
+
+  if (ops.length === 1) {
+    return short ? names[ops[0]] : `Nur ${names[ops[0]]}`;
+  }
+  if (ops.length === 2) {
+    return `${names[ops[0]]} & ${names[ops[1]]}`;
+  }
+  return `${names[ops[0]]}, ${names[ops[1]]} & ${names[ops[2]]}`;
+}
+
+/**
  * Wählt für eine Faktenfamilie die passende Darstellungsform (TaskVariant) streng anhand
- * der explizit gewählten Rechenart (`PracticeOperation`):
- * - 'base': IMMER die Grundaufgabe ('mult' bzw. 'add'), niemals automatisches Umschalten.
- * - 'inverse': IMMER die Umkehraufgabe ('div' bzw. 'sub').
- * - 'mix': 50 % Grundaufgabe, 50 % Umkehraufgabe.
- * - 'gap': Ausschließlich kindgerechte Ergänzungsaufgaben ('gap_mult_b': a × ? = c bzw. 'gap_add_b': a + ? = c),
- *          keine Minus-Lücken (gap_sub_b) oder Geteilt-Lücken (gap_div_a).
+ * der explizit gewählten Rechenarten (`PracticeOperation`):
+ * - `'base'`: Grundaufgabe (`'mult'` bzw. `'add'`)
+ * - `'inverse'`: Umkehraufgabe (`'div'` bzw. `'sub'`)
+ * - `'gap'`: Kindgerechte Ergänzungsaufgabe (`'gap_mult_b'` bzw. `'gap_add_b'`),
+ *            ohne Minus-Lücken (`gap_sub_b`) oder Geteilt-Lücken (`gap_div_a`).
+ * Bei mehreren aktiven Arten wird zufällig unter ihnen gemischt.
  */
 export function selectTaskVariant(
   fact: FactFamily,
   operation: PracticeOperation = 'base'
 ): TaskVariant {
+  const ops = normalizePracticeOperations(operation);
+  const chosen = ops[Math.floor(Math.random() * ops.length)];
+
   if (fact.mode === 'mult') {
-    switch (operation) {
-      case 'inverse':
-        return 'div';
-      case 'mix':
-        return Math.random() < 0.5 ? 'mult' : 'div';
-      case 'gap':
-        return 'gap_mult_b'; // a × ? = c
-      case 'base':
-      default:
-        return 'mult';
-    }
+    if (chosen === 'inverse') return 'div';
+    if (chosen === 'gap') return 'gap_mult_b'; // a × ? = c
+    return 'mult';
   }
 
   // plusminus
-  switch (operation) {
-    case 'inverse':
-      return 'sub';
-    case 'mix':
-      return Math.random() < 0.5 ? 'add' : 'sub';
-    case 'gap':
-      return 'gap_add_b'; // a + ? = c (strikt keine Minus-Lücke gap_sub_b!)
-    case 'base':
-    default:
-      return 'add';
-  }
+  if (chosen === 'inverse') return 'sub';
+  if (chosen === 'gap') return 'gap_add_b'; // a + ? = c (strikt keine Minus-Lücke gap_sub_b!)
+  return 'add';
 }
 
 export function getMultiplicationStrategyHint(a: number, b: number, c: number): string {

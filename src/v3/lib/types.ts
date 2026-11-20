@@ -1,6 +1,7 @@
 export type GameMode = 'mult' | 'plusminus';
 
-export type PracticeOperation = 'base' | 'inverse' | 'mix' | 'gap';
+export type OperationKind = 'base' | 'inverse' | 'gap';
+export type PracticeOperation = 'base' | 'inverse' | 'mix' | 'gap' | OperationKind[];
 export type PracticeWorldScope = 1 | 2 | 3 | 'all';
 
 export type MultVariant =

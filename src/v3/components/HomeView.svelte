@@ -1,6 +1,10 @@
 <script lang="ts">
   import { playKeyTap, playSuccessSound } from '../lib/audio';
   import type { WorldChapterV3 } from '../lib/chapters';
+  import {
+    formatPracticeOperationsLabel,
+    normalizePracticeOperations,
+  } from '../lib/generator';
   import { ALL_STICKERS } from '../lib/stickers';
   import {
     countDueFactsV3,
@@ -10,6 +14,7 @@
   import type {
     FactFamily,
     GameMode,
+    OperationKind,
     PracticeOperation,
     PracticeWorldScope,
     UserProfileV3,
@@ -108,22 +113,33 @@
   );
 
   let operationOptions = $derived<
-    { id: PracticeOperation; icon: string; label: string; fullLabel: string }[]
+    { id: OperationKind; icon: string; label: string }[]
   >(
     gameMode === 'mult'
       ? [
-          { id: 'base', icon: '✖️', label: 'Mal', fullLabel: 'Nur Mal' },
-          { id: 'inverse', icon: '➗', label: 'Geteilt', fullLabel: 'Nur Geteilt' },
-          { id: 'mix', icon: '✖️➗', label: 'Mix', fullLabel: 'Mal & Geteilt Mix' },
-          { id: 'gap', icon: '🧩', label: 'Lücken', fullLabel: 'Lücken-Profi' },
+          { id: 'base', icon: '✖️', label: 'Mal' },
+          { id: 'inverse', icon: '➗', label: 'Geteilt' },
+          { id: 'gap', icon: '🧩', label: 'Lücken' },
         ]
       : [
-          { id: 'base', icon: '➕', label: 'Plus', fullLabel: 'Nur Plus' },
-          { id: 'inverse', icon: '➖', label: 'Minus', fullLabel: 'Nur Minus' },
-          { id: 'mix', icon: '➕➖', label: 'Mix', fullLabel: 'Plus & Minus Mix' },
-          { id: 'gap', icon: '🧩', label: 'Lücken', fullLabel: 'Lücken-Profi' },
+          { id: 'base', icon: '➕', label: 'Plus' },
+          { id: 'inverse', icon: '➖', label: 'Minus' },
+          { id: 'gap', icon: '🧩', label: 'Lücken' },
         ]
   );
+
+  let activeOps = $derived(normalizePracticeOperations(practiceOperation));
+
+  function toggleOperation(kind: OperationKind) {
+    playKeyTap(soundEnabled);
+    if (activeOps.includes(kind)) {
+      if (activeOps.length <= 1) return; // Mindestens eine Rechenart bleibt immer aktiv
+      onSelectOperation?.(activeOps.filter((k) => k !== kind));
+    } else {
+      const order: OperationKind[] = ['base', 'inverse', 'gap'];
+      onSelectOperation?.(order.filter((k) => k === kind || activeOps.includes(k)));
+    }
+  }
 
   let activeWorldSummary = $derived.by(() => {
     if (effectiveWorldScope === 'all') {
@@ -196,8 +212,7 @@
   });
 
   let activeOperationSummary = $derived(
-    operationOptions.find((o) => o.id === practiceOperation)?.fullLabel ??
-      operationOptions[0].fullLabel
+    formatPracticeOperationsLabel(practiceOperation, gameMode, false)
   );
 
   function handleWeakSpotsClick() {
@@ -410,28 +425,28 @@
       {activeWorldSummary} · {activeOperationSummary}
     </p>
 
-    <!-- 1. Rechenart-Auswahl (4 kindgerechte Tiles) -->
+    <!-- 1. Rechenart-Auswahl (3 frei kombinierbare Toggle-Tiles) -->
     <div class="mt-3.5 space-y-2">
-      <div class="grid grid-cols-4 gap-1.5" role="group" aria-label="Rechenart auswählen">
+      <div class="grid grid-cols-3 gap-2" role="group" aria-label="Rechenarten kombinieren">
         {#each operationOptions as opt (opt.id)}
-          {@const isSelectedOp = practiceOperation === opt.id}
+          {@const isSelectedOp = activeOps.includes(opt.id)}
           <button
             type="button"
-            onclick={() => {
-              playKeyTap(soundEnabled);
-              onSelectOperation?.(opt.id);
-            }}
+            onclick={() => toggleOperation(opt.id)}
             aria-pressed={isSelectedOp}
-            class="py-2 px-1 rounded-2xl border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer active:scale-95 {
+            class="relative py-2 px-2 rounded-2xl border flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 {
               isSelectedOp
                 ? 'bg-[#e8f0ff] dark:bg-[#4c9aff]/20 border-[#0a6cff] dark:border-[#4c9aff] text-[#0a6cff] dark:text-[#4c9aff] shadow-2xs'
-                : 'bg-[#f6f7f9] dark:bg-white/[0.06] border-transparent text-[#4b5563] dark:text-[#98989f] hover:text-[#0f1115] dark:hover:text-white'
+                : 'bg-[#f6f7f9] dark:bg-white/[0.06] border-transparent text-[#4b5563] dark:text-[#98989f] hover:text-[#0f1115] dark:hover:text-white opacity-75 hover:opacity-100'
             }"
           >
             <span class="text-sm sm:text-base leading-none">{opt.icon}</span>
-            <span class="text-[10.5px] sm:text-[11px] font-extrabold leading-tight truncate max-w-full">
+            <span class="text-xs font-extrabold leading-tight truncate">
               {opt.label}
             </span>
+            {#if isSelectedOp}
+              <span class="text-[10px] font-black leading-none ml-0.5" aria-hidden="true">✓</span>
+            {/if}
           </button>
         {/each}
       </div>

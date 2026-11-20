@@ -3,8 +3,10 @@ import {
   classifyStrategyMult,
   classifyStrategyPM,
   formatEquationPartsV3,
+  formatPracticeOperationsLabel,
   generateMultFacts,
   generatePlusMinusFacts,
+  normalizePracticeOperations,
   selectTaskVariant,
 } from '../src/v3/lib/generator';
 import {
@@ -148,7 +150,39 @@ for (let i = 0; i < 500; i++) {
   if (v === 'div') sawMixDiv = true;
 }
 assert.ok(sawMixMult && sawMixDiv, 'Bei 1x1 mix müssen mult und div vorkommen');
-console.log('✓ Test 3 bestanden: Explizite Rechenart-Auswahl verhindert Überforderung, Lücken sind strikt Zahl +/?/× ? = Zahl ohne Minus-Lücken.');
+
+// Kombinierbare Mehrfach-Auswahl (3 Toggles: base, inverse, gap)
+assert.deepStrictEqual(normalizePracticeOperations('mix'), ['base', 'inverse']);
+assert.deepStrictEqual(normalizePracticeOperations([]), ['base'], 'Leeres Array fällt sicher auf base zurück');
+assert.strictEqual(
+  formatPracticeOperationsLabel(['base', 'gap'], 'plusminus'),
+  'Plus & Lücken',
+  'Label für Plus + Lücken muss passen'
+);
+assert.strictEqual(
+  formatPracticeOperationsLabel(['base', 'inverse', 'gap'], 'mult'),
+  'Mal, Geteilt & Lücken',
+  'Label für alle 3 Modi im 1x1 muss passen'
+);
+const sawBaseGap = new Set<string>();
+for (let i = 0; i < 300; i++) {
+  const v = selectTaskVariant(masteredPmFact, ['base', 'gap']);
+  assert.ok(v === 'add' || v === 'gap_add_b', `Plus+Lücken darf niemals sub liefern: ${v}`);
+  sawBaseGap.add(v);
+}
+assert.ok(sawBaseGap.has('add') && sawBaseGap.has('gap_add_b'), 'Plus+Lücken muss beide liefern');
+
+const sawAll3 = new Set<string>();
+for (let i = 0; i < 500; i++) {
+  const v = selectTaskVariant(masteredMultFact, ['base', 'inverse', 'gap']);
+  assert.ok(v === 'mult' || v === 'div' || v === 'gap_mult_b', `Unerwartete Variante: ${v}`);
+  sawAll3.add(v);
+}
+assert.ok(
+  sawAll3.has('mult') && sawAll3.has('div') && sawAll3.has('gap_mult_b'),
+  'Alle 3 kombinierten Modi müssen mult, div und gap_mult_b liefern'
+);
+console.log('✓ Test 3 bestanden: Explizite Rechenart-Auswahl & freie 3-Toggle-Kombination funktionieren ohne Überforderung.');
 
 // --- TEST 4: SM-2 Engine & Differenzierte Zeitfenster (1x1: 4s vs. PlusMinus: 5s) ---
 // 1x1 Meister (mult)

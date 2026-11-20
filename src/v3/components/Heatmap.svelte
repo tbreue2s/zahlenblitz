@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getFactVisualStatus } from '../lib/sm2';
+  import { formatPracticeOperationsLabel } from '../lib/generator';
   import {
     getAccessibleFactsPoolV3,
     getFactWorld,
@@ -35,17 +36,7 @@
     onStartRowSession,
   }: Props = $props();
 
-  let opLabel = $derived.by(() => {
-    if (practiceOperation === 'gap') return 'Lücken';
-    if (gameMode === 'mult') {
-      if (practiceOperation === 'inverse') return 'Geteilt';
-      if (practiceOperation === 'mix') return 'Mal & Geteilt';
-      return 'Mal';
-    }
-    if (practiceOperation === 'inverse') return 'Minus';
-    if (practiceOperation === 'mix') return 'Plus & Minus';
-    return 'Plus';
-  });
+  let opLabel = $derived(formatPracticeOperationsLabel(practiceOperation, gameMode, true));
 
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
