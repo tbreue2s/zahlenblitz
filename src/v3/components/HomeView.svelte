@@ -140,8 +140,16 @@
     return gameMode === 'mult' ? 'Welt 3 (Königsaufgaben)' : 'Welt 3 (Zehnerübergang)';
   });
 
+  let isPreviewLockedWorld = $derived(
+    lockedWorldNotice !== null && lockedWorldNotice > unlockedWorldCount
+  );
+
+  let displayedWorldScope = $derived<PracticeWorldScope>(
+    isPreviewLockedWorld ? (lockedWorldNotice as 1 | 2 | 3) : effectiveWorldScope
+  );
+
   let worldInfo = $derived.by(() => {
-    if (effectiveWorldScope === 1) {
+    if (displayedWorldScope === 1) {
       return {
         icon: '🥉',
         title: gameMode === 'mult' ? 'Welt 1 (Kernreihen)' : 'Welt 1 (Basis bis 10)',
@@ -151,7 +159,7 @@
             : 'Alle 45 Zerlegungen bis 10 bilden das unverzichtbare Fundament.',
       };
     }
-    if (effectiveWorldScope === 2) {
+    if (displayedWorldScope === 2) {
       return {
         icon: '🥈',
         title:
@@ -164,7 +172,7 @@
             : 'Verdoppeln und Nachbaraufgaben bis 20 festigen Zwischenschritte.',
       };
     }
-    if (effectiveWorldScope === 3) {
+    if (displayedWorldScope === 3) {
       return {
         icon: '🥇',
         title:
@@ -432,7 +440,8 @@
       <div class="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Rechenwelt auswählen">
         {#each [1, 2, 3] as const as w (w)}
           {@const isLocked = w > unlockedWorldCount}
-          {@const isSelectedWorld = effectiveWorldScope === w}
+          {@const isPreviewWorld = isLocked && lockedWorldNotice === w}
+          {@const isSelectedWorld = effectiveWorldScope === w && !isPreviewLockedWorld}
           <button
             type="button"
             onclick={() => {
@@ -444,12 +453,14 @@
                 onSelectWorldScope?.(w);
               }
             }}
-            aria-pressed={isSelectedWorld}
+            aria-pressed={isSelectedWorld || isPreviewWorld}
             class="text-[11px] font-extrabold px-3 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1 active:scale-95 {
               isSelectedWorld
                 ? 'bg-[#0a6cff] dark:bg-[#4c9aff] text-white dark:text-[#00112b] border-transparent'
+                : isPreviewWorld
+                ? 'bg-[#e8f0ff] dark:bg-[#4c9aff]/20 text-[#0a6cff] dark:text-[#4c9aff] border-[#0a6cff] dark:border-[#4c9aff]'
                 : isLocked
-                ? 'bg-[#f6f7f9] dark:bg-white/[0.04] text-[#9aa1ad] dark:text-[#6c6c74] border-transparent'
+                ? 'bg-[#f6f7f9] dark:bg-white/[0.04] text-[#9aa1ad] dark:text-[#6c6c74] border-transparent hover:text-[#4b5563] dark:hover:text-slate-300'
                 : 'bg-[#f6f7f9] dark:bg-white/[0.07] text-[#4b5563] dark:text-[#98989f] border-transparent hover:text-[#0f1115] dark:hover:text-white'
             }"
           >
@@ -461,7 +472,7 @@
         {/each}
 
         {#if unlockedWorldCount >= 2}
-          {@const isAllSelected = effectiveWorldScope === 'all'}
+          {@const isAllSelected = effectiveWorldScope === 'all' && !isPreviewLockedWorld}
           <button
             type="button"
             onclick={() => {
@@ -481,13 +492,13 @@
         {/if}
       </div>
 
-      {#if lockedWorldNotice !== null && lockedWorldNotice > unlockedWorldCount}
+      {#if isPreviewLockedWorld}
         <div class="text-[11px] font-semibold text-[#4b5563] dark:text-slate-300 bg-[#f6f7f9] dark:bg-white/[0.06] px-3 py-2 rounded-2xl animate-fade-in">
-          🔒 Welt {lockedWorldNotice} schaltet sich frei, sobald 80 % von Welt {lockedWorldNotice - 1} hellgrün sind (oder über Optionen → Lernpfad: Frei).
+          🔒 <strong>Vorschau:</strong> Welt {lockedWorldNotice} schaltet sich frei, sobald 80 % von Welt {(lockedWorldNotice ?? 2) - 1} hellgrün sind (oder über Optionen → Lernpfad: Frei).
         </div>
       {/if}
 
-      <!-- Didaktische Beschreibung der ausgewählten Welt (direkt vor 'Los geht's') -->
+      <!-- Didaktische Beschreibung der ausgewählten (oder vorgewählten) Welt -->
       <div class="text-[11px] leading-relaxed text-[#4b5563] dark:text-slate-300 bg-[#f6f7f9] dark:bg-white/[0.05] p-2.5 rounded-2xl border border-black/[0.05] dark:border-white/[0.07] flex items-center gap-2 animate-fade-in">
         <span class="text-base shrink-0">{worldInfo.icon}</span>
         <span><strong>{worldInfo.title}:</strong> {worldInfo.desc}</span>
@@ -500,7 +511,13 @@
       class="mt-4 w-full h-[52px] bg-[#0a6cff] hover:bg-[#2b7fff] text-white dark:bg-[#4c9aff] dark:hover:bg-[#6aaeff] dark:text-[#00112b] font-extrabold text-[15px] rounded-full flex items-center justify-center gap-2 transition cursor-pointer border-none active:scale-[0.98]"
     >
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5l12 7.5-12 7.5z"/></svg>
-      <span>Los geht’s</span>
+      <span>
+        {#if isPreviewLockedWorld}
+          Mit Welt {effectiveWorldScope === 'all' ? `1–${unlockedWorldCount}` : effectiveWorldScope} starten
+        {:else}
+          Los geht’s
+        {/if}
+      </span>
     </button>
   </section>
 
@@ -509,7 +526,7 @@
     {gameMode}
     {facts}
     {practiceOperation}
-    practiceWorldScope={effectiveWorldScope}
+    practiceWorldScope={displayedWorldScope}
     freeWorldChoice={activeProfile.freeWorldChoice ?? false}
     onPracticeFact={onPracticeFact}
     onStartChapterSession={onStartChapterSession}
